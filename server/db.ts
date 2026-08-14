@@ -30,3 +30,11 @@ export async function listKeywords(userId: number) { const db = await getDb(); i
 export async function listSaved(userId: number) { const db = await getDb(); if (!db) return []; return db.select({ saved: savedNotices, notice: notices }).from(savedNotices).innerJoin(notices, eq(savedNotices.noticeId, notices.id)).where(eq(savedNotices.userId, userId)).orderBy(desc(savedNotices.updatedAt)); }
 export async function getSettings(userId: number) { const db = await getDb(); if (!db) return undefined; return (await db.select().from(userSettings).where(eq(userSettings.userId, userId)).limit(1))[0]; }
 export async function getCollectionRuns() { const db = await getDb(); if (!db) return []; return db.select().from(collectionRuns).orderBy(desc(collectionRuns.startedAt)).limit(10); }
+export async function estimateBid(input: { agency?: string; itemName?: string; baseAmount: number }) {
+  const rows = await listNotices({ q: input.itemName || input.agency, sourceType: "award", limit: 200 });
+  const filtered = rows.filter(row => (!input.agency || row.agency?.includes(input.agency)) && (!input.itemName || `${row.title} ${row.itemName ?? ""}`.includes(input.itemName)) && row.awardRate);
+  const rates = filtered.map(row => Number(row.awardRate)).filter(Number.isFinite).sort((a, b) => a - b);
+  if (!rates.length) return { sampleSize: 0, message: "조건에 맞는 과거 낙찰률 데이터가 없습니다." };
+  const median = rates[Math.floor(rates.length / 2)]; const low = rates[Math.floor(rates.length * 0.25)]; const high = rates[Math.max(0, Math.ceil(rates.length * 0.75) - 1)];
+  return { sampleSize: rates.length, medianRate: median, lowRate: low, highRate: high, expectedBid: Math.round(input.baseAmount * median / 100), minBid: Math.round(input.baseAmount * low / 100), maxBid: Math.round(input.baseAmount * high / 100) };
+}

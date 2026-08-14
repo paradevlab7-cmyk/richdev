@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Tags, Settings2 } from "lucide-react";
+import { Building2, FileCheck2, FileSearch, Gavel, LayoutDashboard, LogOut, PanelLeft, Tags, Settings2 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -29,8 +29,12 @@ import { Button } from "./ui/button";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "공고 검색", path: "/" },
-  { icon: Tags, label: "키워드 관리", path: "/?section=keywords" },
-  { icon: Settings2, label: "설정", path: "/?section=settings" },
+  { icon: FileSearch, label: "입찰공고", path: "/bid" },
+  { icon: FileCheck2, label: "사전규격공고", path: "/spec" },
+  { icon: Gavel, label: "낙찰정보", path: "/award" },
+  { icon: Building2, label: "계약정보", path: "/contract" },
+  { icon: Tags, label: "키워드 관리", path: "/keywords" },
+  { icon: Settings2, label: "설정", path: "/settings" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
