@@ -8,6 +8,10 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { sdk } from "./sdk";
+import { ENV } from "./env";
+import { collectForUser, sendTelegram } from "../g2b";
+import { getUserByOpenId } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -44,6 +48,20 @@ async function startServer() {
       createContext,
     })
   );
+  const scheduledHandler = async (req: express.Request, res: express.Response, mode: "hourly" | "daily") => {
+    try {
+      const cronUser = await sdk.authenticateRequest(req);
+      if (!cronUser.isCron) return res.status(403).json({ error: "cron-only" });
+      const owner = await getUserByOpenId(ENV.ownerOpenId);
+      if (!owner) return res.json({ ok: true, skipped: "owner-not-found" });
+      const result = await collectForUser(owner.id);
+      if (mode === "daily" || result.matched > 0) await sendTelegram(owner.id, mode === "daily" ? `나라장터 08:00 요약\n최근 5일 수집 ${result.total}건\n키워드 매칭 ${result.matched}건` : `나라장터 신규 키워드 매칭 공고 ${result.matched}건이 수집되었습니다.`);
+      return res.json({ ok: true, result });
+    } catch (error) { return res.status(500).json({ error: String(error), timestamp: new Date().toISOString() }); }
+  };
+  app.post("/api/scheduled/g2b-hourly", (req, res) => scheduledHandler(req, res, "hourly"));
+  app.post("/api/scheduled/g2b-daily", (req, res) => scheduledHandler(req, res, "daily"));
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
