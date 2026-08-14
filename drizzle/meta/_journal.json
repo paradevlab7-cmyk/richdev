@@ -15,6 +15,13 @@
       "when": 1786749144267,
       "tag": "0001_slow_scorpion",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1786749704718,
+      "tag": "0002_wonderful_the_hand",
+      "breakpoints": true
     }
   ]
 }

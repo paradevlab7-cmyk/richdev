@@ -12,6 +12,7 @@ import { sdk } from "./sdk";
 import { ENV } from "./env";
 import { collectForUser, sendTelegram } from "../g2b";
 import { getUserByOpenId } from "../db";
+import { buildDailyDigest, sendDigestEmail } from "../email";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -55,7 +56,13 @@ async function startServer() {
       const owner = await getUserByOpenId(ENV.ownerOpenId);
       if (!owner) return res.json({ ok: true, skipped: "owner-not-found" });
       const result = await collectForUser(owner.id);
-      if (mode === "daily" || result.matched > 0) await sendTelegram(owner.id, mode === "daily" ? `나라장터 08:00 요약\n최근 5일 수집 ${result.total}건\n키워드 매칭 ${result.matched}건` : `나라장터 신규 키워드 매칭 공고 ${result.matched}건이 수집되었습니다.`);
+      if (mode === "daily") {
+        const title = "나라장터 08:00 키워드 매칭 요약";
+        const digest = await buildDailyDigest(owner.id);
+        await Promise.all([sendTelegram(owner.id, `나라장터 08:00 요약\n최근 5일 수집 ${digest.totalCount}건\n키워드 매칭 ${digest.matchedCount}건`), sendDigestEmail(owner.id, title, digest.html)]);
+      } else if (result.matched > 0) {
+        await sendTelegram(owner.id, `나라장터 신규 키워드 매칭 공고 ${result.matched}건이 수집되었습니다.`);
+      }
       return res.json({ ok: true, result });
     } catch (error) { return res.status(500).json({ error: String(error), timestamp: new Date().toISOString() }); }
   };
