@@ -13,7 +13,7 @@ export const G2B_ENDPOINTS = {
 
 const OPERATIONS = {
   bid: "getBidPblancListInfoServc",
-  spec: "getPublicPrcureThngInfoServc",
+  spec: "getPublicPrcureThngInfoServcPPSSrch",
   award: "getScsbidListSttusThng",
   contract: "getCntrctInfoListThng",
   standard: "getDataSetOpnStdBidPblancInfo",
@@ -27,7 +27,7 @@ function totalCount(payload: any) { const body = payload?.response?.body ?? payl
 function inferSourceType(item: Record<string, unknown>, fallback: keyof typeof G2B_ENDPOINTS): keyof typeof G2B_ENDPOINTS {
   if (item.cntrctNo || item.cntrctNm || item.cntrctCnclsDate) return "contract";
   if (item.sucsfbidAmt || item.sucsfbidRate || item.sucsfbidCorpNm) return "award";
-  if (item.prcrmntReqNo || item.rgstNo || item.preStdntNo) return "spec";
+  if (item.prcrmntReqNo || item.rgstNo || item.preStdntNo || item.bfSpecRgstNo) return "spec";
   if (item.bidNtceNo || item.bidNtceNm) return "bid";
   return fallback;
 }
@@ -60,20 +60,20 @@ export async function collectForUser(userId: number, sourceType?: keyof typeof G
       for (let pageNo = 1; pageNo <= maxPages; pageNo += 1) {
         const url = new URL(`${G2B_ENDPOINTS[type]}/${OPERATIONS[type]}`);
         url.searchParams.set("serviceKey", normalizeServiceKey(serviceKey)); url.searchParams.set("pageNo", String(pageNo)); url.searchParams.set("numOfRows", String(pageSize)); url.searchParams.set("type", "json");
-        if (type === "award") url.searchParams.set("inqryDiv", "1");
+        if (type === "award" || type === "spec") url.searchParams.set("inqryDiv", "1");
         url.searchParams.set("inqryBgnDt", formatApiDate(start)); url.searchParams.set("inqryEndDt", formatApiDate(end));
         const payload = await getJson(url); const items = toItems(payload); const available = totalCount(payload); if (!items.length) break;
         fetched += items.length; total += items.length;
         for (const item of items) {
           const resolvedType = inferSourceType(item, type);
-          const sourceId = String(first(item.bidNtceNo, item.ntceNo, item.cntrctNo, item.untyCntrctNo, item.prcrmntReqNo, item.rgstNo) ?? `${item.bidNtceNm ?? item.cntrctNm ?? JSON.stringify(item).slice(0, 40)}`);
+          const sourceId = String(first(item.bidNtceNo, item.ntceNo, item.cntrctNo, item.untyCntrctNo, item.prcrmntReqNo, item.rgstNo, item.bfSpecRgstNo, item.refNo) ?? `${item.bidNtceNm ?? item.cntrctNm ?? item.prdctClsfcNoNm ?? JSON.stringify(item).slice(0, 40)}`);
           const noticeId = `${resolvedType}:${sourceId}`;
-          const title = String(first(item.bidNtceNm, item.ntceNm, item.cntrctNm, item.prdctNm, item.bsnsNm, "제목 미상"));
-          const text = `${title} ${item.cntrctInsttNm ?? item.dminsttNm ?? item.orderInsttNm ?? ""}`.toLowerCase();
+          const title = String(first(item.bidNtceNm, item.ntceNm, item.cntrctNm, item.prdctNm, item.prdctClsfcNoNm, item.bfSpecDtil, item.bsnsNm, "제목 미상"));
+          const text = `${title} ${item.cntrctInsttNm ?? item.dminsttNm ?? item.orderInsttNm ?? ""} ${item.bfSpecDtil ?? ""}`.toLowerCase();
           const matchedKeywords = keywords.filter(k => k.isActive && text.includes(k.keyword.toLowerCase())); if (matchedKeywords.length) { matched += 1; typeMatched += 1; }
-          const noticeDate = parseDate(first(item.bidNtceDt, item.ntceDt, item.opengDt, item.cntrctDate, item.cntrctCnclsDate, item.dataBssDate, item.regDt));
-          const deadline = parseDate(first(item.bidClseDt, item.bidNtceEndDt, item.rcptEndDt));
-          const baseAmount = parseNumber(first(item.presmptPrice, item.bssamt, item.cntrctAmt, item.totCntrctAmt)); const awardAmount = parseNumber(first(item.sucsfbidAmt, item.finalSucsfBidAmt, item.cntrctAmt)); const awardRate = parseNumber(first(item.sucsfbidRate, item.bidRate));
+          const noticeDate = parseDate(first(item.bidNtceDt, item.ntceDt, item.opengDt, item.cntrctDate, item.cntrctCnclsDate, item.dataBssDate, item.regDt, item.rgstDt, item.bfSpecRgstDt));
+          const deadline = parseDate(first(item.bidClseDt, item.bidNtceEndDt, item.rcptEndDt, item.opninRgstClseDt));
+          const baseAmount = parseNumber(first(item.presmptPrice, item.bssamt, item.asignBdgtAmt, item.cntrctAmt, item.totCntrctAmt)); const awardAmount = parseNumber(first(item.sucsfbidAmt, item.finalSucsfBidAmt, item.cntrctAmt)); const awardRate = parseNumber(first(item.sucsfbidRate, item.bidRate));
           const originalUrl = first(item.bidNtceUrl, item.ntceUrl, item.cntrctInfoUrl, item.linkUrl, item.g2bLink) as string | undefined;
           const attachmentsJson = JSON.stringify(extractAttachments(item));
           await db.insert(notices).values({ sourceType: resolvedType, noticeId, title, agency: String(first(item.cntrctInsttNm, item.dminsttNm, item.orderInsttNm, "")), itemName: String(first(item.prdctNm, item.bidNtceNm, "")), noticeDate, deadline, baseAmount, awardAmount, awardRate, originalUrl, attachmentsJson, rawJson: JSON.stringify(item), sourceUpdatedAt: new Date() }).onDuplicateKeyUpdate({ set: { sourceType: resolvedType, title, agency: String(first(item.cntrctInsttNm, item.dminsttNm, "")), itemName: String(first(item.prdctNm, item.bidNtceNm, "")), noticeDate, deadline, baseAmount, awardAmount, awardRate, originalUrl, attachmentsJson, rawJson: JSON.stringify(item), sourceUpdatedAt: new Date() } });

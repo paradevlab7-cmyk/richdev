@@ -14,3 +14,10 @@
 - 실제 오퍼레이션명과 필드명은 공공데이터포털 참고문서에 맞춘 서비스별 어댑터에서 관리한다.
 - 인증키·텔레그램 토큰·사용자 ID는 환경변수나 소스 코드에 넣지 않고 설정 화면에서 암호화된 사용자 설정으로 관리한다.
 - 1시간 수집과 08:00 알림은 애플리케이션 내부 타이머가 아니라 플랫폼 Heartbeat의 /api/scheduled/* 엔드포인트로 구현한다.
+
+## 사전규격정보서비스 추가 확인 — 2026-08-15
+
+- 기본 URL은 `https://apis.data.go.kr/1230000/ao/HrcspSsstndrdInfoService`다.
+- 기존 `getPublicPrcureThngInfoServc`는 단일 용역 오퍼레이션이어서 전체 사전규격 수집에 적합하지 않다.
+- 통합 검색용 우선 오퍼레이션은 `getPublicPrcureThngInfoServcPPSSrch`이며, `inqryDiv=1`, `inqryBgnDt`, `inqryEndDt`를 함께 전달한다.
+- 사전규격은 물품·용역·공사별 오퍼레이션이 존재하므로, PPSSrch 결과가 없는 경우 카테고리별 오퍼레이션을 병합하는 보완이 필요하다.
