@@ -5,7 +5,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { and, desc, eq } from "drizzle-orm";
 import { estimateBid, getBidRateTrend, getCollectionDailyStats, getCollectionPreferences, getCollectionRuns, getCollectionWorkEstimate, getCompanyHistory, getDb, getNotice, getNoticeStats, getSettings, listBidAnalysisHistory, listFavoriteFilters, listKeywords, listNotices, listSaved, saveBidAnalysisHistory, saveCollectionPreferences } from "./db";
-import { collectForUser } from "./g2b";
+import { collectForUser, retryFailedCollectionRun } from "./g2b";
 import { decryptSecret, encryptSecret } from "./secure";
 import { parseEndOfDay, parseStartOfDay } from "./dateRange";
 import { favoriteFilters, monitoringKeywords, notices, savedNotices, userSettings } from "../drizzle/schema";
@@ -64,6 +64,7 @@ export const appRouter = router({
       if (result.failures.length === 5) throw new Error(result.failures.map(item => `${item.sourceType}: ${item.message}`).join("\n"));
       return result;
     }),
+    retry: protectedProcedure.input(z.object({ runId: z.number().int().positive() })).mutation(async ({ ctx, input }) => retryFailedCollectionRun(ctx.user.id, input.runId)),
   }),
   analysis: router({
     estimate: protectedProcedure.input(bidAnalysisInput).query(({ input }) => estimateBid(input)),

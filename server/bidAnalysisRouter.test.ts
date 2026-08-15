@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ estimateBid: vi.fn(), getBidRateTrend: vi.fn(), saveBidAnalysisHistory: vi.fn(), listBidAnalysisHistory: vi.fn() }));
+const mocks = vi.hoisted(() => ({ estimateBid: vi.fn(), getBidRateTrend: vi.fn(), saveBidAnalysisHistory: vi.fn(), listBidAnalysisHistory: vi.fn(), retryFailedCollectionRun: vi.fn() }));
 
 vi.mock("./db", () => ({
   estimateBid: mocks.estimateBid, getBidRateTrend: mocks.getBidRateTrend,
@@ -8,7 +8,7 @@ vi.mock("./db", () => ({
   listBidAnalysisHistory: mocks.listBidAnalysisHistory,
   getCollectionDailyStats: vi.fn(), getCollectionPreferences: vi.fn(), getCollectionRuns: vi.fn(), getCollectionWorkEstimate: vi.fn(), getCompanyHistory: vi.fn(), getDb: vi.fn(), getNotice: vi.fn(), getNoticeStats: vi.fn(), getSettings: vi.fn(), listFavoriteFilters: vi.fn(), listKeywords: vi.fn(), listNotices: vi.fn(), listSaved: vi.fn(), saveCollectionPreferences: vi.fn(),
 }));
-vi.mock("./g2b", () => ({ collectForUser: vi.fn() }));
+vi.mock("./g2b", () => ({ collectForUser: vi.fn(), retryFailedCollectionRun: mocks.retryFailedCollectionRun }));
 vi.mock("./secure", () => ({ decryptSecret: vi.fn(), encryptSecret: vi.fn() }));
 
 import { appRouter } from "./routers";
@@ -17,6 +17,13 @@ import type { TrpcContext } from "./_core/context";
 const context = { user: { id: 17, openId: "analysis-user", email: null, name: null, loginMethod: null, role: "user" as const, createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() }, req: {} as TrpcContext["req"], res: {} as TrpcContext["res"] } as TrpcContext;
 
 describe("analysis router", () => {
+  it("retries a failed collection run for the current user", async () => {
+    mocks.retryFailedCollectionRun.mockResolvedValueOnce({ runId: 810001, fetched: 100, failures: [] });
+    const result = await appRouter.createCaller(context).collection.retry({ runId: 810001 });
+    expect(mocks.retryFailedCollectionRun).toHaveBeenCalledWith(17, 810001);
+    expect(result).toEqual({ runId: 810001, fetched: 100, failures: [] });
+  });
+
   it("returns only the current user's saved analysis history", async () => {
     mocks.listBidAnalysisHistory.mockResolvedValueOnce([{ id: 4, userId: 17, sampleSize: 12 }]);
     const result = await appRouter.createCaller(context).analysis.history();

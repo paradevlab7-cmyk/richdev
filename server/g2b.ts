@@ -202,5 +202,15 @@ export async function collectForUser(userId: number, sourceType?: keyof typeof G
   }
   return { total, matched, failures };
 }
+export async function retryFailedCollectionRun(userId: number, runId: number) {
+  const db = await getDb(); if (!db) throw new Error("DB unavailable");
+  const run = (await db.select().from(collectionRuns).where(eq(collectionRuns.id, runId)).limit(1))[0];
+  if (!run || run.status !== "failed") throw new Error("재시도할 실패 수집 실행을 찾을 수 없습니다.");
+  if (!(run.sourceType in G2B_ENDPOINTS)) throw new Error("지원하지 않는 수집 서비스입니다.");
+  const type = run.sourceType as keyof typeof G2B_ENDPOINTS; const requestedDays = run.queryStartAt && run.queryEndAt ? Math.max(1, Math.ceil((run.queryEndAt.getTime() - run.queryStartAt.getTime()) / 86400000)) : 15;
+  await db.update(collectionRuns).set({ status: "running", errorMessage: null, finishedAt: null }).where(eq(collectionRuns.id, run.id));
+  const resumedRun = { ...run, status: "running" as const, errorMessage: null, finishedAt: null };
+  return collectTypeBatch(userId, type, { pageLimit: 5, requestedDays, activeRun: resumedRun, isBackground: Boolean(run.isBackground) });
+}
 export async function sendTelegram(userId: number, message: string) { const settings = await getSettings(userId); const token = decryptSecret(settings?.telegramBotToken); if (!settings?.telegramEnabled || !token || !settings.telegramChatId) return false; const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: settings.telegramChatId, text: message, disable_web_page_preview: true }) }); return response.ok; }
 function formatApiDate(date: Date) { const p = (n: number) => String(n).padStart(2, "0"); return `${date.getFullYear()}${p(date.getMonth() + 1)}${p(date.getDate())}${p(date.getHours())}${p(date.getMinutes())}`; }
