@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { G2B_ENDPOINTS, resolveCollectionWindowDays } from "./g2b";
+import { describe, expect, it, vi } from "vitest";
+import { G2B_ENDPOINTS, getJson, resolveCollectionWindowDays } from "./g2b";
 
 describe("G2B endpoint catalog", () => {
   it("keeps the five user-specified public API base URLs unchanged", () => {
@@ -20,5 +20,25 @@ describe("collection duration", () => {
     expect(resolveCollectionWindowDays("award", 15)).toBe(15);
     expect(resolveCollectionWindowDays("award", 30)).toBe(30);
     expect(resolveCollectionWindowDays("award", 180)).toBe(30);
+  });
+});
+
+describe("G2B API retry", () => {
+  it("retries a transient request error once before returning the parsed API payload", async () => {
+    const mockFetch = vi.fn()
+      .mockRejectedValueOnce(new Error("temporary network failure"))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ response: { header: { resultCode: "00" }, body: { items: [] } } }), { status: 200 }));
+
+    const payload = await getJson(new URL("https://example.test/spec"), { fetchImpl: mockFetch as unknown as typeof fetch, retryDelayMs: 0 });
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(payload.response.header.resultCode).toBe("00");
+  });
+
+  it("returns an error only after the retry also fails", async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new Error("network unavailable"));
+
+    await expect(getJson(new URL("https://example.test/spec"), { fetchImpl: mockFetch as unknown as typeof fetch, retryDelayMs: 0 })).rejects.toThrow("network unavailable");
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });

@@ -45,7 +45,35 @@ export function extractAttachments(item: Record<string, unknown>) {
 }
 function insertId(result: unknown) { const value = (result as any)?.insertId ?? (result as any)?.[0]?.insertId; const id = Number(value); if (!Number.isInteger(id) || id <= 0) throw new Error("수집 이력 ID를 확인할 수 없습니다."); return id; }
 function normalizeServiceKey(key: string) { try { return decodeURIComponent(key.trim()); } catch { return key.trim(); } }
-async function getJson(url: URL) { const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 25000); try { const response = await fetch(url, { signal: controller.signal, headers: { Accept: "application/json" } }); const body = await response.text(); if (!response.ok) throw new Error(`API ${response.status}: ${body.slice(0, 300)}`); try { const parsed = JSON.parse(body); const header = parsed?.response?.header; if (header?.resultCode && header.resultCode !== "00") throw new Error(`API ${header.resultCode}: ${header.resultMsg ?? "요청 실패"}`); return parsed; } catch (error) { if (error instanceof SyntaxError) throw new Error(`API가 JSON 대신 응답을 반환했습니다: ${body.slice(0, 300)}`); throw error; } } finally { clearTimeout(timeout); } }
+export async function getJson(url: URL, options: { fetchImpl?: typeof fetch; retryDelayMs?: number } = {}) {
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const retryDelayMs = options.retryDelayMs ?? 500;
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+    try {
+      const response = await fetchImpl(url, { signal: controller.signal, headers: { Accept: "application/json" } });
+      const body = await response.text();
+      if (!response.ok) throw new Error(`API ${response.status}: ${body.slice(0, 300)}`);
+      try {
+        const parsed = JSON.parse(body);
+        const header = parsed?.response?.header;
+        if (header?.resultCode && header.resultCode !== "00") throw new Error(`API ${header.resultCode}: ${header.resultMsg ?? "요청 실패"}`);
+        return parsed;
+      } catch (error) {
+        if (error instanceof SyntaxError) throw new Error(`API가 JSON 대신 응답을 반환했습니다: ${body.slice(0, 300)}`);
+        throw error;
+      }
+    } catch (error) {
+      lastError = error;
+      if (attempt === 0) await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
 
 export async function collectForUser(userId: number, sourceType?: keyof typeof G2B_ENDPOINTS, pageLimit = 5, requestedDays = 5) {
   const db = await getDb(); if (!db) throw new Error("DB unavailable");
