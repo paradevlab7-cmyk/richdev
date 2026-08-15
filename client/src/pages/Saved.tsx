@@ -1,10 +1,12 @@
+import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
-import { Bookmark, ExternalLink, Trash2 } from "lucide-react";
+import { exportElementToImage, exportNoticesToExcel } from "@/lib/noticeExport";
+import { Bookmark, Download, ExternalLink, ImageDown, Trash2 } from "lucide-react";
 
 const statusLabels = {
   watching: "관심",
@@ -24,10 +26,14 @@ export default function Saved() {
   const remove = trpc.saved.toggle.useMutation({
     onSuccess: () => utils.saved.list.invalidate(),
   });
+  const [selected, setSelected] = useState<number[]>([]);
+  const selectedItems = (data ?? []).filter(item => selected.includes(item.notice.id));
+  const exportItems = selectedItems.length ? selectedItems : (data ?? []);
+  const toggleSelected = (noticeId: number) => setSelected(current => current.includes(noticeId) ? current.filter(id => id !== noticeId) : [...current, noticeId]);
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen -m-4 bg-[#f6f8fb] p-5 md:p-8">
+      <div className="min-h-screen -m-3 bg-background p-3 sm:-m-5 sm:p-5 lg:-m-6 lg:p-6">
         <div className="mx-auto max-w-[1440px]">
           <div className="mb-6">
             <p className="text-xs font-semibold tracking-[.16em] text-primary">WATCHLIST</p>
@@ -37,7 +43,7 @@ export default function Saved() {
             </p>
           </div>
 
-          <Card className="border-0 shadow-sm">
+          <Card id="saved-notices-export" className="app-surface border-0">
             <CardHeader className="flex-row items-start justify-between">
               <div>
                 <CardTitle className="text-base">저장한 공고</CardTitle>
@@ -45,14 +51,14 @@ export default function Saved() {
                   {isLoading ? "조회 중" : `${data?.length ?? 0}건`}
                 </p>
               </div>
-              <Badge variant="outline">개인 관리 목록</Badge>
+              <div className="flex flex-wrap justify-end gap-2"><Button variant="outline" size="sm" disabled={!exportItems.length} onClick={() => exportNoticesToExcel(exportItems.map(item => item.notice), "나라장터_관심공고")}><Download className="mr-1.5 h-3.5 w-3.5" />Excel</Button><Button variant="outline" size="sm" disabled={!exportItems.length} onClick={() => exportElementToImage("saved-notices-export", "나라장터_관심공고")}><ImageDown className="mr-1.5 h-3.5 w-3.5" />이미지</Button><Badge variant="outline">{selectedItems.length ? `${selectedItems.length}건 선택` : "개인 관리 목록"}</Badge></div>
             </CardHeader>
             <CardContent className="p-0">
               <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[920px] text-sm">
                 <thead className="bg-muted/40 text-muted-foreground">
                   <tr>
-                    <th className="p-4 text-left">공고</th>
+                    <th className="w-12 p-4 text-center"><input aria-label="관심공고 전체 선택" type="checkbox" checked={(data?.length ?? 0) > 0 && data!.every(item => selected.includes(item.notice.id))} onChange={() => setSelected((data?.every(item => selected.includes(item.notice.id))) ? [] : (data ?? []).map(item => item.notice.id))} /></th><th className="p-4 text-left">공고</th>
                     <th className="p-4 text-left">기관</th>
                     <th className="p-4 text-left">상태</th>
                     <th className="p-4 text-left">메모</th>
@@ -61,7 +67,7 @@ export default function Saved() {
                 </thead>
                 <tbody>
                   {data?.map(item => (
-                    <tr key={item.saved.id} className="border-t align-top">
+                    <tr key={item.saved.id} className="border-t align-top"><td className="p-4 text-center"><input aria-label={`${item.notice.title} 선택`} type="checkbox" checked={selected.includes(item.notice.id)} onChange={() => toggleSelected(item.notice.id)} /></td>
                       <td className="p-4">
                         <p className="font-medium">{item.notice.title}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
@@ -122,7 +128,7 @@ export default function Saved() {
                   ))}
                   {!isLoading && !data?.length && (
                     <tr>
-                      <td colSpan={5} className="p-12 text-center text-muted-foreground">
+                      <td colSpan={6} className="p-12 text-center text-muted-foreground">
                         <Bookmark className="mx-auto mb-3 h-8 w-8 opacity-40" />
                         검색 결과에서 북마크를 선택하면 이 목록에서 관리할 수 있습니다.
                       </td>
@@ -133,7 +139,7 @@ export default function Saved() {
               </div>
               <div className="divide-y md:hidden">
                 {data?.map(item => (
-                  <div key={item.saved.id} className="space-y-3 p-4">
+                  <div key={item.saved.id} className="space-y-3 p-4"><label className="flex items-center gap-2 text-xs text-muted-foreground"><input aria-label={`${item.notice.title} 선택`} type="checkbox" checked={selected.includes(item.notice.id)} onChange={() => toggleSelected(item.notice.id)} />내보내기 선택</label>
                     <div>
                       <p className="font-medium leading-5">{item.notice.title}</p>
                       <p className="mt-1 text-xs text-muted-foreground">{item.notice.agency && item.notice.agency !== "undefined" ? item.notice.agency : "기관 정보 없음"} · {item.notice.noticeDate ? new Date(item.notice.noticeDate).toLocaleDateString("ko-KR") : "날짜 정보 없음"}</p>

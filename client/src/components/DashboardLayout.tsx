@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { BarChart3, Bookmark, Building2, FileCheck2, FileSearch, Gavel, History, LayoutDashboard, LogOut, PanelLeft, Tags, Settings2 } from "lucide-react";
+import { BarChart3, Bookmark, Building2, FileCheck2, FileSearch, Gavel, History, LayoutDashboard, LogOut, Moon, PanelLeft, Settings2, Sun, Tags } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -113,6 +114,7 @@ function DashboardLayoutContent({
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -174,6 +176,9 @@ function DashboardLayoutContent({
               >
                 <PanelLeft className="h-4 w-4 text-muted-foreground" />
               </button>
+              <button onClick={toggleTheme} className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background/70 text-muted-foreground transition-all hover:-translate-y-0.5 hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring" aria-label={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}>
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-semibold tracking-tight truncate">
@@ -208,6 +213,9 @@ function DashboardLayoutContent({
           </SidebarContent>
 
           <SidebarFooter className="p-3">
+            <button onClick={toggleTheme} className="mb-2 flex h-9 w-full items-center gap-3 rounded-lg px-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground group-data-[collapsible=icon]:justify-center" aria-label={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}>
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}<span className="group-data-[collapsible=icon]:hidden">{theme === "dark" ? "라이트 모드" : "다크 모드"}</span>
+            </button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -260,10 +268,12 @@ function DashboardLayoutContent({
                   </span>
                 </div>
               </div>
+              <button onClick={toggleTheme} className="ml-auto flex h-9 w-9 items-center justify-center rounded-lg border bg-background text-muted-foreground" aria-label={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}>{theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button>
             </div>
           </div>
         )}
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 p-3 sm:p-5 lg:p-6">{children}</main>
+        <footer className="border-t border-border/70 px-4 py-5 text-center text-xs text-muted-foreground sm:px-6">Copyright 2026. paradev.lab7@gmail.com All rights reserved.</footer>
       </SidebarInset>
     </>
   );

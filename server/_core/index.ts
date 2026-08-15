@@ -67,6 +67,7 @@ async function startServer() {
     } catch (error) { return res.status(500).json({ error: String(error), timestamp: new Date().toISOString() }); }
   };
   app.post("/api/scheduled/g2b-hourly", (req, res) => scheduledHandler(req, res, "hourly"));
+  app.post("/api/scheduled/g2b-six-hour", (req, res) => scheduledHandler(req, res, "hourly"));
   app.post("/api/scheduled/g2b-daily", (req, res) => scheduledHandler(req, res, "daily"));
   app.post("/api/scheduled/g2b-spec-backfill", async (req, res) => {
     try {
