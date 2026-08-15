@@ -22,6 +22,13 @@
       "when": 1786749704718,
       "tag": "0002_wonderful_the_hand",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1786765420682,
+      "tag": "0003_lumpy_argent",
+      "breakpoints": true
     }
   ]
 }

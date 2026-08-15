@@ -10,7 +10,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { sdk } from "./sdk";
 import { ENV } from "./env";
-import { collectForUser, sendTelegram } from "../g2b";
+import { collectForUser, collectSpecBackfill, sendTelegram } from "../g2b";
 import { getUserByOpenId } from "../db";
 import { buildDailyDigest, sendDigestEmail } from "../email";
 
@@ -68,6 +68,18 @@ async function startServer() {
   };
   app.post("/api/scheduled/g2b-hourly", (req, res) => scheduledHandler(req, res, "hourly"));
   app.post("/api/scheduled/g2b-daily", (req, res) => scheduledHandler(req, res, "daily"));
+  app.post("/api/scheduled/g2b-spec-backfill", async (req, res) => {
+    try {
+      const cronUser = await sdk.authenticateRequest(req);
+      if (!cronUser.isCron) return res.status(403).json({ error: "cron-only" });
+      const owner = await getUserByOpenId(ENV.ownerOpenId);
+      if (!owner) return res.json({ ok: true, skipped: "owner-not-found" });
+      const result = await collectSpecBackfill(owner.id);
+      return res.json({ ok: true, result });
+    } catch (error) {
+      return res.status(500).json({ error: String(error), timestamp: new Date().toISOString() });
+    }
+  });
 
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {

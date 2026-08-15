@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Saved from "./pages/Saved";
 import NoticeDetail from "./pages/NoticeDetail";
 import Analysis from "./pages/Analysis";
+import CollectionHistory from "./pages/CollectionHistory";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -22,6 +23,7 @@ function Router() {
       <Route path={"/saved"} component={Saved} />
       <Route path={"/notice/:id"} component={NoticeDetail} />
       <Route path={"/analysis"} component={Analysis} />
+      <Route path={"/collections"} component={CollectionHistory} />
       <Route path={"/keywords"} component={Home} />
       <Route path={"/settings"} component={Home} />
       <Route path={"/404"} component={NotFound} />

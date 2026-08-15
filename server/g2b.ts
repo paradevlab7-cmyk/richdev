@@ -1,6 +1,6 @@
 import { getDb, getSettings, listKeywords } from "./db";
 import { collectionRuns, notices } from "../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { and, count, desc, eq, gt, gte, lte } from "drizzle-orm";
 import { decryptSecret } from "./secure";
 
 export const G2B_ENDPOINTS = {
@@ -75,45 +75,110 @@ export async function getJson(url: URL, options: { fetchImpl?: typeof fetch; ret
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
-export async function collectForUser(userId: number, sourceType?: keyof typeof G2B_ENDPOINTS, pageLimit = 5, requestedDays = 5) {
-  const db = await getDb(); if (!db) throw new Error("DB unavailable");
-  const settings = await getSettings(userId); const serviceKey = decryptSecret(settings?.dataServiceKey); if (!serviceKey) throw new Error("공공데이터 인증키가 설정되지 않았습니다.");
-  const keywords = await listKeywords(userId); const types = sourceType ? [sourceType] : Object.keys(G2B_ENDPOINTS) as (keyof typeof G2B_ENDPOINTS)[];
-  let total = 0; let matched = 0; const failures: { sourceType: string; message: string }[] = [];
-  for (const type of types) {
-    const run = await db.insert(collectionRuns).values({ sourceType: type, status: "running" });
-    const runId = insertId(run);
-    try {
-      const end = new Date();
-      // 낙찰정보서비스는 API 입력 범위 제한이 있어 최근 30일까지만 직접 조회한다.
-      const lookbackDays = resolveCollectionWindowDays(type, requestedDays);
-      const start = new Date(end.getTime() - lookbackDays * 86400000);
-      let fetched = 0; let typeMatched = 0; const pageSize = 100; const maxPages = Math.max(1, Math.min(pageLimit, 5));
-      for (let pageNo = 1; pageNo <= maxPages; pageNo += 1) {
-        const url = new URL(`${G2B_ENDPOINTS[type]}/${OPERATIONS[type]}`);
-        url.searchParams.set("serviceKey", normalizeServiceKey(serviceKey)); url.searchParams.set("pageNo", String(pageNo)); url.searchParams.set("numOfRows", String(pageSize)); url.searchParams.set("type", "json");
-        if (type === "award" || type === "spec") url.searchParams.set("inqryDiv", "1");
-        url.searchParams.set("inqryBgnDt", formatApiDate(start)); url.searchParams.set("inqryEndDt", formatApiDate(end));
-        const payload = await getJson(url); const items = toItems(payload); const available = totalCount(payload); if (!items.length) break;
-        fetched += items.length; total += items.length;
-        for (const item of items) {
-          const resolvedType = inferSourceType(item, type);
-          const sourceId = String(first(item.bidNtceNo, item.ntceNo, item.cntrctNo, item.untyCntrctNo, item.prcrmntReqNo, item.rgstNo, item.bfSpecRgstNo, item.refNo) ?? `${item.bidNtceNm ?? item.cntrctNm ?? item.prdctClsfcNoNm ?? JSON.stringify(item).slice(0, 40)}`);
-          const noticeId = `${resolvedType}:${sourceId}`;
-          const title = String(first(item.bidNtceNm, item.ntceNm, item.cntrctNm, item.prdctNm, item.prdctClsfcNoNm, item.bfSpecDtil, item.bsnsNm, "제목 미상"));
-          const text = `${title} ${item.cntrctInsttNm ?? item.dminsttNm ?? item.orderInsttNm ?? ""} ${item.bfSpecDtil ?? ""}`.toLowerCase();
-          const matchedKeywords = keywords.filter(k => k.isActive && text.includes(k.keyword.toLowerCase())); if (matchedKeywords.length) { matched += 1; typeMatched += 1; }
-          const noticeDate = parseDate(first(item.bidNtceDt, item.ntceDt, item.opengDt, item.cntrctDate, item.cntrctCnclsDate, item.dataBssDate, item.regDt, item.rgstDt, item.bfSpecRgstDt));
-          const deadline = parseDate(first(item.bidClseDt, item.bidNtceEndDt, item.rcptEndDt, item.opninRgstClseDt));
-          const baseAmount = parseNumber(first(item.presmptPrice, item.bssamt, item.asignBdgtAmt, item.cntrctAmt, item.totCntrctAmt)); const awardAmount = parseNumber(first(item.sucsfbidAmt, item.finalSucsfBidAmt, item.cntrctAmt)); const awardRate = parseNumber(first(item.sucsfbidRate, item.bidRate));
-          const originalUrl = first(item.bidNtceUrl, item.ntceUrl, item.cntrctInfoUrl, item.linkUrl, item.g2bLink) as string | undefined;
-          const attachmentsJson = JSON.stringify(extractAttachments(item));
-          await db.insert(notices).values({ sourceType: resolvedType, noticeId, title, agency: String(first(item.cntrctInsttNm, item.dminsttNm, item.orderInsttNm, "")), itemName: String(first(item.prdctNm, item.bidNtceNm, "")), noticeDate, deadline, baseAmount, awardAmount, awardRate, originalUrl, attachmentsJson, rawJson: JSON.stringify(item), sourceUpdatedAt: new Date() }).onDuplicateKeyUpdate({ set: { sourceType: resolvedType, title, agency: String(first(item.cntrctInsttNm, item.dminsttNm, "")), itemName: String(first(item.prdctNm, item.bidNtceNm, "")), noticeDate, deadline, baseAmount, awardAmount, awardRate, originalUrl, attachmentsJson, rawJson: JSON.stringify(item), sourceUpdatedAt: new Date() } });
-        }
-        if (items.length < pageSize || (available > 0 && fetched >= available)) break;
+type ActiveCollectionRun = typeof collectionRuns.$inferSelect;
+type BatchResult = { fetched: number; matched: number; failures: { sourceType: string; message: string }[]; runId: number; isComplete: boolean };
+
+async function countStoredNotices(type: keyof typeof G2B_ENDPOINTS, start: Date, end: Date) {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db.select({ total: count() }).from(notices).where(and(eq(notices.sourceType, type), gte(notices.noticeDate, start), lte(notices.noticeDate, end)));
+  return Number(rows[0]?.total ?? 0);
+}
+
+async function getActiveSpecRun() {
+  const db = await getDb();
+  if (!db) return undefined;
+  return (await db.select().from(collectionRuns).where(and(eq(collectionRuns.sourceType, "spec"), eq(collectionRuns.status, "running"), gt(collectionRuns.totalAvailable, 0), gt(collectionRuns.totalAvailable, collectionRuns.fetchedCount))).orderBy(desc(collectionRuns.startedAt)).limit(1))[0];
+}
+
+async function collectTypeBatch(userId: number, type: keyof typeof G2B_ENDPOINTS, options: { pageLimit: number; requestedDays: number; activeRun?: ActiveCollectionRun; isBackground?: boolean }): Promise<BatchResult> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const settings = await getSettings(userId);
+  const serviceKey = decryptSecret(settings?.dataServiceKey);
+  if (!serviceKey) throw new Error("공공데이터 인증키가 설정되지 않았습니다.");
+  const keywords = await listKeywords(userId);
+  const end = options.activeRun?.queryEndAt ?? new Date();
+  const start = options.activeRun?.queryStartAt ?? new Date(end.getTime() - resolveCollectionWindowDays(type, options.requestedDays) * 86400000);
+  const startPage = options.activeRun ? options.activeRun.currentPage + 1 : 1;
+  const runId = options.activeRun?.id ?? insertId(await db.insert(collectionRuns).values({ sourceType: type, status: "running", startPage, currentPage: startPage - 1, queryStartAt: start, queryEndAt: end, isBackground: Boolean(options.isBackground) }));
+  let fetchedCount = options.activeRun?.fetchedCount ?? 0;
+  let matchedCount = options.activeRun?.matchedCount ?? 0;
+  let totalAvailable = options.activeRun?.totalAvailable ?? 0;
+  let currentPage = options.activeRun?.currentPage ?? startPage - 1;
+  let batchFetched = 0;
+  let batchMatched = 0;
+  let reachedEnd = false;
+  const pageSize = 100;
+  const maxPages = Math.max(1, Math.min(options.pageLimit, 5));
+
+  try {
+    for (let pageNo = startPage; pageNo < startPage + maxPages; pageNo += 1) {
+      const url = new URL(`${G2B_ENDPOINTS[type]}/${OPERATIONS[type]}`);
+      url.searchParams.set("serviceKey", normalizeServiceKey(serviceKey));
+      url.searchParams.set("pageNo", String(pageNo));
+      url.searchParams.set("numOfRows", String(pageSize));
+      url.searchParams.set("type", "json");
+      if (type === "award" || type === "spec") url.searchParams.set("inqryDiv", "1");
+      url.searchParams.set("inqryBgnDt", formatApiDate(start));
+      url.searchParams.set("inqryEndDt", formatApiDate(end));
+      const payload = await getJson(url);
+      const items = toItems(payload);
+      totalAvailable = totalCount(payload) || totalAvailable;
+      if (!items.length) { reachedEnd = true; break; }
+
+      for (const item of items) {
+        const resolvedType = inferSourceType(item, type);
+        const sourceId = String(first(item.bidNtceNo, item.ntceNo, item.cntrctNo, item.untyCntrctNo, item.prcrmntReqNo, item.rgstNo, item.bfSpecRgstNo, item.refNo) ?? `${item.bidNtceNm ?? item.cntrctNm ?? item.prdctClsfcNoNm ?? JSON.stringify(item).slice(0, 40)}`);
+        const noticeId = `${resolvedType}:${sourceId}`;
+        const title = String(first(item.bidNtceNm, item.ntceNm, item.cntrctNm, item.prdctNm, item.prdctClsfcNoNm, item.bfSpecDtil, item.bsnsNm, "제목 미상"));
+        const text = `${title} ${item.cntrctInsttNm ?? item.dminsttNm ?? item.orderInsttNm ?? ""} ${item.bfSpecDtil ?? ""}`.toLowerCase();
+        const matchedKeywords = keywords.filter(k => k.isActive && text.includes(k.keyword.toLowerCase()));
+        if (matchedKeywords.length) { matchedCount += 1; batchMatched += 1; }
+        const noticeDate = parseDate(first(item.bidNtceDt, item.ntceDt, item.opengDt, item.cntrctDate, item.cntrctCnclsDate, item.dataBssDate, item.regDt, item.rgstDt, item.bfSpecRgstDt));
+        const deadline = parseDate(first(item.bidClseDt, item.bidNtceEndDt, item.rcptEndDt, item.opninRgstClseDt));
+        const baseAmount = parseNumber(first(item.presmptPrice, item.bssamt, item.asignBdgtAmt, item.cntrctAmt, item.totCntrctAmt));
+        const awardAmount = parseNumber(first(item.sucsfbidAmt, item.finalSucsfBidAmt, item.cntrctAmt));
+        const awardRate = parseNumber(first(item.sucsfbidRate, item.bidRate));
+        const originalUrl = first(item.bidNtceUrl, item.ntceUrl, item.cntrctInfoUrl, item.linkUrl, item.g2bLink) as string | undefined;
+        const attachmentsJson = JSON.stringify(extractAttachments(item));
+        await db.insert(notices).values({ sourceType: resolvedType, noticeId, title, agency: String(first(item.cntrctInsttNm, item.dminsttNm, item.orderInsttNm, "")), itemName: String(first(item.prdctNm, item.bidNtceNm, "")), noticeDate, deadline, baseAmount, awardAmount, awardRate, originalUrl, attachmentsJson, rawJson: JSON.stringify(item), sourceUpdatedAt: new Date() }).onDuplicateKeyUpdate({ set: { sourceType: resolvedType, title, agency: String(first(item.cntrctInsttNm, item.dminsttNm, "")), itemName: String(first(item.prdctNm, item.bidNtceNm, "")), noticeDate, deadline, baseAmount, awardAmount, awardRate, originalUrl, attachmentsJson, rawJson: JSON.stringify(item), sourceUpdatedAt: new Date() } });
       }
-      await db.update(collectionRuns).set({ status: "success", fetchedCount: fetched, matchedCount: typeMatched, finishedAt: new Date() }).where(eq(collectionRuns.id, runId));
-    } catch (error) { const message = error instanceof Error ? error.message : String(error); failures.push({ sourceType: type, message }); await db.update(collectionRuns).set({ status: "failed", errorMessage: message.slice(0, 2000), finishedAt: new Date() }).where(eq(collectionRuns.id, runId)); }
+      fetchedCount += items.length;
+      batchFetched += items.length;
+      currentPage = pageNo;
+      if (items.length < pageSize || (totalAvailable > 0 && fetchedCount >= totalAvailable)) { reachedEnd = true; break; }
+    }
+    const totalPages = totalAvailable ? Math.ceil(totalAvailable / pageSize) : currentPage;
+    const isComplete = reachedEnd || (totalAvailable > 0 && currentPage >= totalPages);
+    const storedCount = await countStoredNotices(type, start, end);
+    await db.update(collectionRuns).set({ status: isComplete ? "success" : "running", fetchedCount, totalAvailable, storedCount, currentPage, totalPages, matchedCount, isBackground: Boolean(options.isBackground), finishedAt: isComplete ? new Date() : null, errorMessage: null }).where(eq(collectionRuns.id, runId));
+    return { fetched: batchFetched, matched: batchMatched, failures: [], runId, isComplete };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const storedCount = await countStoredNotices(type, start, end);
+    await db.update(collectionRuns).set({ status: "failed", fetchedCount, totalAvailable, storedCount, currentPage, totalPages: totalAvailable ? Math.ceil(totalAvailable / pageSize) : 0, matchedCount, errorMessage: message.slice(0, 2000), finishedAt: new Date(), isBackground: Boolean(options.isBackground) }).where(eq(collectionRuns.id, runId));
+    return { fetched: batchFetched, matched: batchMatched, failures: [{ sourceType: type, message }], runId, isComplete: false };
+  }
+}
+
+export async function collectSpecBackfill(userId: number) {
+  const activeRun = await getActiveSpecRun();
+  if (!activeRun) return { skipped: "no-active-spec-backfill" as const, fetched: 0, matched: 0, isComplete: true };
+  return collectTypeBatch(userId, "spec", { pageLimit: 5, requestedDays: 15, activeRun, isBackground: true });
+}
+
+export async function collectForUser(userId: number, sourceType?: keyof typeof G2B_ENDPOINTS, pageLimit = 5, requestedDays = 5) {
+  const types = sourceType ? [sourceType] : Object.keys(G2B_ENDPOINTS) as (keyof typeof G2B_ENDPOINTS)[];
+  let total = 0;
+  let matched = 0;
+  const failures: { sourceType: string; message: string }[] = [];
+  for (const type of types) {
+    const activeRun = type === "spec" ? await getActiveSpecRun() : undefined;
+    const result = await collectTypeBatch(userId, type, { pageLimit, requestedDays, activeRun });
+    total += result.fetched;
+    matched += result.matched;
+    failures.push(...result.failures);
   }
   return { total, matched, failures };
 }
