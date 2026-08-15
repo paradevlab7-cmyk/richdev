@@ -5,6 +5,7 @@ import { ENV } from "./_core/env";
 import { InsertUser, users, userSettings, monitoringKeywords, favoriteFilters, notices, savedNotices, collectionRuns, bidAnalysisHistory } from "../drizzle/schema";
 import { buildBidRateTrend } from "./bidRateTrend";
 import { COLLECTION_SOURCE_TYPES, type CollectionSourceType, estimateCollectionWork, normalizeCollectionDays, normalizeServiceCollectionDefaults } from "../shared/collectionPreferences";
+import { normalizeCollectionRunError } from "../shared/collectionRunStatus";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
@@ -82,7 +83,7 @@ export async function getCollectionWorkEstimate(days: number, sourceTypes: Colle
   const rows = await db.select().from(collectionRuns).where(sql`${collectionRuns.sourceType} IN (${sql.join(sourceTypes.map(sourceType => sql`${sourceType}`), sql`, `)})`).orderBy(desc(collectionRuns.startedAt)).limit(150);
   return estimateCollectionWork(days, sourceTypes, rows.map(row => ({ sourceType: row.sourceType, status: row.status, fetchedCount: row.fetchedCount, totalAvailable: row.totalAvailable, queryStartAt: row.queryStartAt, queryEndAt: row.queryEndAt, startedAt: row.startedAt, finishedAt: row.finishedAt })));
 }
-export async function getCollectionRuns() { const db = await getDb(); if (!db) return []; return db.select().from(collectionRuns).orderBy(desc(collectionRuns.startedAt)).limit(10); }
+export async function getCollectionRuns() { const db = await getDb(); if (!db) return []; const runs = await db.select().from(collectionRuns).orderBy(desc(collectionRuns.startedAt)).limit(10); return runs.map(run => ({ ...run, errorMessage: normalizeCollectionRunError(run.status, run.errorMessage) })); }
 export async function getCollectionDailyStats(days = 7) {
   const db = await getDb();
   if (!db) return [];
