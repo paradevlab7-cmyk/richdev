@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
+import { attachmentDisplayName, formatFileSize, type NoticeAttachment } from "@/lib/noticeMetadata";
 import { ArrowLeft, Building2, ExternalLink, FileText, Phone, UserRound } from "lucide-react";
 import { useLocation, useRoute } from "wouter";
 
@@ -12,8 +13,8 @@ function parseRaw(value: string | null | undefined): RawNotice { try { const par
 function rawText(raw: RawNotice, ...keys: string[]) { const value = keys.map(key => raw[key]).find(value => value !== undefined && value !== null && String(value).trim() && String(value) !== "undefined"); return value === undefined ? undefined : String(value); }
 function DetailRow({ label, value }: { label: string; value?: string }) { return value ? <div className="flex justify-between gap-5"><span className="shrink-0 text-muted-foreground">{label}</span><span className="text-right break-words">{value}</span></div> : null; }
 
-export function toAttachments(value: string | null) { if (!value) return [] as { name: string; url: string }[]; try { const parsed = JSON.parse(value); return Array.isArray(parsed) ? parsed.filter(item => item?.url) : []; } catch { return []; } }
-export function AttachmentLinks({ attachments }: { attachments: { name: string; url: string }[] }) { return <>{attachments.map((attachment, index) => { const legacySpecSequence = attachment.name?.match(/^specDocFileUrl(\d+)$/i)?.[1]; const label = legacySpecSequence ? `사전규격 첨부자료 ${legacySpecSequence}` : attachment.name || `첨부자료 ${index + 1}`; return <a key={`${attachment.url}-${index}`} href={attachment.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline"><FileText className="h-4 w-4" />{label}</a>; })}</>; }
+export function toAttachments(value: string | null) { if (!value) return [] as NoticeAttachment[]; try { const parsed = JSON.parse(value); return Array.isArray(parsed) ? parsed.filter(item => item?.url) as NoticeAttachment[] : []; } catch { return []; } }
+export function AttachmentLinks({ attachments }: { attachments: NoticeAttachment[] }) { return <>{attachments.map((attachment, index) => <a key={`${attachment.url}-${index}`} href={attachment.url} target="_blank" rel="noreferrer" className="flex items-start gap-2 text-sm text-primary hover:underline"><FileText className="mt-0.5 h-4 w-4 shrink-0" /><span><span className="font-medium">{attachmentDisplayName(attachment, index)}</span><span className="ml-2 text-xs text-muted-foreground">{formatFileSize(attachment.sizeBytes)}</span></span></a>)}</>; }
 
 export default function NoticeDetail() {
   const [, params] = useRoute("/notice/:id"); const [, navigate] = useLocation(); const noticeId = Number(params?.id); const { data, isLoading } = trpc.notices.detail.useQuery({ id: noticeId }, { enabled: Number.isInteger(noticeId) }); const attachments = toAttachments(data?.attachmentsJson ?? null); const raw = parseRaw(data?.rawJson); const originalUrl = data?.originalUrl ?? rawText(raw, "bidNtceUrl", "ntceUrl", "cntrctInfoUrl", "linkUrl", "g2bLink");

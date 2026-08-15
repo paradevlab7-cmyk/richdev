@@ -15,4 +15,14 @@ describe("extractAttachments", () => {
       { name: "downloadUrl", url: "https://www.g2b.go.kr/files/terms.zip" },
     ]);
   });
+
+  it("stores API-provided file names and byte sizes next to each attachment URL", () => {
+    const attachments = extractAttachments({
+      specDocFileUrl1: "https://www.g2b.go.kr/files/task.hwp",
+      specDocFileNm1: "과업지시서.hwp",
+      specDocFileSize1: "428032",
+    });
+
+    expect(attachments).toEqual([{ name: "사전규격 첨부자료 1", fileName: "과업지시서.hwp", sizeBytes: 428032, url: "https://www.g2b.go.kr/files/task.hwp" }]);
+  });
 });

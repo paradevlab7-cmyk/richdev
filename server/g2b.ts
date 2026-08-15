@@ -43,7 +43,9 @@ export function extractAttachments(item: Record<string, unknown>) {
     if (!/(atch|attach|file|download)/i.test(key)) return [];
     const sequence = key.match(/(\d+)$/)?.[1];
     const name = /^specDocFileUrl/i.test(key) ? `사전규격 첨부자료 ${sequence ?? ""}`.trim() : key;
-    return [{ name, url: value }];
+    const fileName = first(item[`${key.replace(/Url/i, "")}Nm`], item[`${key.replace(/Url/i, "")}FileNm`], item[`${key}Nm`], item[`${key}FileNm`], sequence ? item[`specDocFileNm${sequence}`] : undefined, sequence ? item[`fileNm${sequence}`] : undefined);
+    const sizeBytes = first(item[`${key.replace(/Url/i, "")}Size`], item[`${key.replace(/Url/i, "")}FileSize`], item[`${key}Size`], item[`${key}FileSize`], sequence ? item[`specDocFileSize${sequence}`] : undefined, sequence ? item[`fileSize${sequence}`] : undefined);
+    return [{ name, url: value, ...(fileName ? { fileName: String(fileName) } : {}), ...(parseNumber(sizeBytes) ? { sizeBytes: Number(parseNumber(sizeBytes)) } : {}) }];
   });
 }
 
