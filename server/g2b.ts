@@ -170,12 +170,13 @@ export async function collectSpecBackfill(userId: number) {
 }
 
 export async function collectForUser(userId: number, sourceType?: keyof typeof G2B_ENDPOINTS, pageLimit = 5, requestedDays = 5) {
-  const types = sourceType ? [sourceType] : Object.keys(G2B_ENDPOINTS) as (keyof typeof G2B_ENDPOINTS)[];
+  const activeSpecRun = await getActiveSpecRun();
+  const types: (keyof typeof G2B_ENDPOINTS)[] = sourceType ? [sourceType] : activeSpecRun ? ["spec"] : Object.keys(G2B_ENDPOINTS) as (keyof typeof G2B_ENDPOINTS)[];
   let total = 0;
   let matched = 0;
   const failures: { sourceType: string; message: string }[] = [];
   for (const type of types) {
-    const activeRun = type === "spec" ? await getActiveSpecRun() : undefined;
+    const activeRun = type === "spec" ? activeSpecRun ?? await getActiveSpecRun() : undefined;
     const result = await collectTypeBatch(userId, type, { pageLimit, requestedDays, activeRun });
     total += result.fetched;
     matched += result.matched;
