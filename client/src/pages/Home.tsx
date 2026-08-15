@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { createSearchQuery, toggleKeywordSelection } from "@/lib/keywordSearch";
+import { createCollectionRequest, toDateInput } from "@/lib/searchPeriod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -38,8 +39,6 @@ function NoticeResults({ type, q, keywords, from, to }: { type: ServiceType; q: 
   return <Card className="border-0 shadow-sm"><CardHeader className="flex-row justify-between gap-3"><div><CardTitle className="text-base">검색 결과</CardTitle><p className="mt-1 text-xs text-muted-foreground">{isLoading ? "조회 중" : `${data?.length ?? 0}건`}</p></div><Badge variant="outline" className="shrink-0">최근 수집 데이터</Badge></CardHeader><CardContent className="overflow-x-auto p-0"><table className="w-full min-w-[820px] text-sm"><thead className="bg-muted/40 text-muted-foreground"><tr><th className="p-3 sm:p-4 text-left">구분</th><th className="p-3 sm:p-4 text-left">공고명</th><th className="p-3 sm:p-4 text-left">기관</th><th className="p-3 sm:p-4 text-left">등록일</th><th className="p-3 sm:p-4 text-right">금액</th><th className="p-3 sm:p-4" /></tr></thead><tbody>{data?.map(row => { const savedNow = isSaved(row.id); return <tr key={row.id} className="border-t hover:bg-muted/20"><td className="p-3 sm:p-4"><Badge>{serviceMeta[row.sourceType as keyof typeof serviceMeta]?.label ?? "통합"}</Badge></td><td className="p-3 sm:p-4"><button className="text-left" onClick={() => navigate(`/notice/${row.id}`)}><p className="font-medium hover:text-primary hover:underline">{row.title}</p><p className="text-xs text-muted-foreground">{row.noticeId}</p></button></td><td className="p-3 sm:p-4 text-muted-foreground">{row.agency && row.agency !== "undefined" ? row.agency : "-"}</td><td className="p-3 sm:p-4 text-muted-foreground">{row.noticeDate ? new Date(row.noticeDate).toLocaleDateString("ko-KR") : "-"}</td><td className="p-3 sm:p-4 text-right">{row.awardAmount || row.baseAmount ? `${Number(row.awardAmount || row.baseAmount).toLocaleString()}원` : "-"}</td><td className="p-3 sm:p-4"><div className="flex"><Button aria-label={savedNow ? "관심공고 해제" : "관심공고 저장"} variant="ghost" size="icon" className={`transition-all duration-150 active:scale-95 ${savedNow ? "bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600" : "text-muted-foreground hover:text-red-500"}`} onClick={event => { event.stopPropagation(); toggleSaved(row.id); }}><Bookmark className={`h-4 w-4 transition-colors ${savedNow ? "fill-current" : ""}`} /></Button>{row.originalUrl && <a aria-label="원문 보기" href={row.originalUrl} target="_blank" rel="noreferrer" className="inline-flex h-9 w-9 items-center justify-center"><ExternalLink className="h-4 w-4" /></a>}</div></td></tr>; })}{!isLoading && !data?.length && <tr><td colSpan={6} className="p-12 text-center text-muted-foreground"><Database className="mx-auto mb-3 h-8 w-8 opacity-40" />조건에 맞는 공고가 없습니다. 설정에서 인증키를 저장한 뒤 수집을 실행하세요.</td></tr>}</tbody></table></CardContent></Card>;
 }
 
-function toDateInput(daysAgo = 0) { const date = new Date(); date.setDate(date.getDate() - daysAgo); return date.toISOString().slice(0, 10); }
-
 function SearchPage({ type }: { type: ServiceType }) {
   const [location] = useLocation();
   const { data: keywords = [] } = trpc.keywords.list.useQuery();
@@ -64,7 +63,7 @@ function SettingsPage() { const { data: saved } = trpc.settings.get.useQuery(); 
 function CollectionControl() {
   const [days, setDays] = useState(15);
   const collect = trpc.collection.runNow.useMutation();
-  return <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row"><select aria-label="수집 기간" value={days} onChange={event => setDays(Number(event.target.value))} className="h-10 rounded-md border bg-background px-3 text-sm"><option value={15}>최근 15일</option><option value={30}>최근 1개월</option><option value={60}>최근 2개월</option><option value={90}>최근 3개월</option><option value={180}>최근 6개월</option></select><Button variant="outline" onClick={() => collect.mutate({ days })} disabled={collect.isPending}><RefreshCw className="mr-2 h-4 w-4" />{collect.isPending ? "수집 중" : `${days}일 수집`}</Button></div>;
+  return <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row"><select aria-label="수집 기간" value={days} onChange={event => setDays(Number(event.target.value))} className="h-10 rounded-md border bg-background px-3 text-sm"><option value={15}>최근 15일</option><option value={30}>최근 1개월</option><option value={60}>최근 2개월</option><option value={90}>최근 3개월</option><option value={180}>최근 6개월</option></select><Button variant="outline" onClick={() => collect.mutate(createCollectionRequest(days))} disabled={collect.isPending}><RefreshCw className="mr-2 h-4 w-4" />{collect.isPending ? "수집 중" : `${days}일 수집`}</Button></div>;
 }
 
 export default function Home() {

@@ -11,6 +11,11 @@ export const G2B_ENDPOINTS = {
   standard: "https://apis.data.go.kr/1230000/ao/PubDataOpnStdService",
 } as const;
 
+export function resolveCollectionWindowDays(type: keyof typeof G2B_ENDPOINTS, requestedDays: number) {
+  const normalizedDays = Math.max(1, Math.min(requestedDays, 180));
+  return type === "award" ? Math.min(normalizedDays, 30) : normalizedDays;
+}
+
 const OPERATIONS = {
   bid: "getBidPblancListInfoServc",
   spec: "getPublicPrcureThngInfoServcPPSSrch",
@@ -52,9 +57,8 @@ export async function collectForUser(userId: number, sourceType?: keyof typeof G
     const runId = insertId(run);
     try {
       const end = new Date();
-      const normalizedDays = Math.max(1, Math.min(requestedDays, 180));
       // 낙찰정보서비스는 API 입력 범위 제한이 있어 최근 30일까지만 직접 조회한다.
-      const lookbackDays = type === "award" ? Math.min(normalizedDays, 30) : normalizedDays;
+      const lookbackDays = resolveCollectionWindowDays(type, requestedDays);
       const start = new Date(end.getTime() - lookbackDays * 86400000);
       let fetched = 0; let typeMatched = 0; const pageSize = 100; const maxPages = Math.max(1, Math.min(pageLimit, 5));
       for (let pageNo = 1; pageNo <= maxPages; pageNo += 1) {

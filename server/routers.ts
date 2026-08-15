@@ -7,6 +7,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { estimateBid, getDb, getCollectionRuns, getNotice, getNoticeStats, getSettings, listKeywords, listNotices, listSaved } from "./db";
 import { collectForUser } from "./g2b";
 import { decryptSecret, encryptSecret } from "./secure";
+import { parseEndOfDay, parseStartOfDay } from "./dateRange";
 import { monitoringKeywords, notices, savedNotices, userSettings } from "../drizzle/schema";
 
 const sourceTypes = ["bid", "spec", "award", "contract", "standard"] as const;
@@ -14,7 +15,7 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({ me: publicProcedure.query(opts => opts.ctx.user), logout: publicProcedure.mutation(({ ctx }) => { ctx.res.clearCookie(COOKIE_NAME, { ...getSessionCookieOptions(ctx.req), maxAge: -1 }); return { success: true } as const; }) }),
   notices: router({
-    list: protectedProcedure.input(z.object({ q: z.string().optional(), keywords: z.array(z.string().min(1)).max(20).optional(), sourceType: z.enum(["all", ...sourceTypes]).default("all"), from: z.string().optional(), to: z.string().optional() })).query(({ input }) => listNotices({ ...input, from: input.from ? new Date(input.from) : undefined, to: input.to ? new Date(input.to) : undefined })),
+    list: protectedProcedure.input(z.object({ q: z.string().optional(), keywords: z.array(z.string().min(1)).max(20).optional(), sourceType: z.enum(["all", ...sourceTypes]).default("all"), from: z.string().optional(), to: z.string().optional() })).query(({ input }) => listNotices({ ...input, from: parseStartOfDay(input.from), to: parseEndOfDay(input.to) })),
     detail: protectedProcedure.input(z.object({ id: z.number() })).query(({ input }) => getNotice(input.id)),
     stats: protectedProcedure.query(() => getNoticeStats()),
   }),
