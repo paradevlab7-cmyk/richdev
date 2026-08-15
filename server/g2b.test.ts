@@ -47,6 +47,13 @@ describe("G2B field aliases", () => {
     expect(mapped.attachmentsJson).toContain("사전규격 첨부자료 1");
   });
 
+  it("preserves bid notice specification files and the contract detail original link from the reference fields", () => {
+    const bid = mapG2BNoticeFields({ bidNtceNo: "R26BK01679541", bidNtceNm: "의료기기", ntceSpecDocUrl1: "https://www.g2b.go.kr/download/spec-1" }, "bid");
+    const contract = mapG2BNoticeFields({ untyCntrctNo: "R26TA00000001", cntrctNm: "계약", cntrctDtlInfoUrl: "https://www.g2b.go.kr/contract/detail" }, "contract");
+    expect(bid.attachmentsJson).toContain("입찰공고 첨부자료 1");
+    expect(contract.originalUrl).toBe("https://www.g2b.go.kr/contract/detail");
+  });
+
   it("keeps public-standard bid notices under the standard service instead of reclassifying them as bid API rows", () => {
     const mapped = mapG2BNoticeFields({ bidNtceNo: "R26BK01679541", bidNtceNm: "PATIENT MONITOR" }, "standard");
     expect(mapped.sourceType).toBe("standard");

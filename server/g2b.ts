@@ -45,9 +45,9 @@ function inferSourceType(item: Record<string, unknown>, fallback: keyof typeof G
 export function extractAttachments(item: Record<string, unknown>) {
   return Object.entries(item).flatMap(([key, value]) => {
     if (typeof value !== "string" || !/^https?:\/\//i.test(value)) return [];
-    if (!/(atch|attach|file|download)/i.test(key)) return [];
+    if (!/(atch|attach|file|download|specdoc|docurl)/i.test(key)) return [];
     const sequence = key.match(/(\d+)$/)?.[1];
-    const name = /^specDocFileUrl/i.test(key) ? `사전규격 첨부자료 ${sequence ?? ""}`.trim() : key;
+    const name = /^specDocFileUrl/i.test(key) ? `사전규격 첨부자료 ${sequence ?? ""}`.trim() : /^ntceSpecDocUrl/i.test(key) ? `입찰공고 첨부자료 ${sequence ?? ""}`.trim() : key;
     const fileName = first(item[`${key.replace(/Url/i, "")}Nm`], item[`${key.replace(/Url/i, "")}FileNm`], item[`${key}Nm`], item[`${key}FileNm`], sequence ? item[`specDocFileNm${sequence}`] : undefined, sequence ? item[`fileNm${sequence}`] : undefined);
     const sizeBytes = first(item[`${key.replace(/Url/i, "")}Size`], item[`${key.replace(/Url/i, "")}FileSize`], item[`${key}Size`], item[`${key}FileSize`], sequence ? item[`specDocFileSize${sequence}`] : undefined, sequence ? item[`fileSize${sequence}`] : undefined);
     return [{ name, url: value, ...(fileName ? { fileName: String(fileName) } : {}), ...(parseNumber(sizeBytes) ? { sizeBytes: Number(parseNumber(sizeBytes)) } : {}) }];
@@ -66,7 +66,7 @@ export function mapG2BNoticeFields(item: Record<string, unknown>, fallback: keyo
   const itemName = String(first(item.prdctNm, item.bidNtceNm, item.prdctClsfcNoNm, item.bfSpecDtil, title));
   const noticeDate = parseDate(first(item.bidNtceDt, item.bidNtceDate, item.ntceDt, item.ntceDate, item.opengDt, item.opengDate, item.cntrctDate, item.cntrctCnclsDate, item.dataBssDate, item.regDt, item.rgstDt, item.bfSpecRgstDt));
   const deadline = parseDate(first(item.bidClseDt, item.bidNtceEndDt, dateWithTime(item.bidClseDate, item.bidClseTm), item.rcptEndDt, item.opninRgstClseDt));
-  return { sourceType, noticeId: `${sourceType}:${sourceId}`, title, agency, itemName, noticeDate, deadline, baseAmount: parseNumber(first(item.presmptPrice, item.presmptPrce, item.bssamt, item.asignBdgtAmt, item.cntrctAmt, item.totCntrctAmt)), awardAmount: parseNumber(first(item.sucsfbidAmt, item.finalSucsfBidAmt, item.cntrctAmt)), awardRate: parseNumber(first(item.sucsfbidRate, item.bidRate)), originalUrl: first(item.bidNtceUrl, item.ntceUrl, item.cntrctInfoUrl, item.linkUrl, item.g2bLink) as string | undefined, attachmentsJson: JSON.stringify(extractAttachments(item)) };
+  return { sourceType, noticeId: `${sourceType}:${sourceId}`, title, agency, itemName, noticeDate, deadline, baseAmount: parseNumber(first(item.presmptPrice, item.presmptPrce, item.bssamt, item.asignBdgtAmt, item.cntrctAmt, item.totCntrctAmt)), awardAmount: parseNumber(first(item.sucsfbidAmt, item.finalSucsfBidAmt, item.cntrctAmt)), awardRate: parseNumber(first(item.sucsfbidRate, item.bidRate)), originalUrl: first(item.bidNtceUrl, item.ntceUrl, item.cntrctDtlInfoUrl, item.cntrctInfoUrl, item.linkUrl, item.g2bLink) as string | undefined, attachmentsJson: JSON.stringify(extractAttachments(item)) };
 }
 function insertId(result: unknown) { const value = (result as any)?.insertId ?? (result as any)?.[0]?.insertId; const id = Number(value); if (!Number.isInteger(id) || id <= 0) throw new Error("수집 이력 ID를 확인할 수 없습니다."); return id; }
 function normalizeServiceKey(key: string) { try { return decodeURIComponent(key.trim()); } catch { return key.trim(); } }
