@@ -5,6 +5,8 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import Saved from "./pages/Saved";
+import NoticeDetail from "./pages/NoticeDetail";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -16,6 +18,8 @@ function Router() {
       <Route path={"/award"} component={Home} />
       <Route path={"/contract"} component={Home} />
       <Route path={"/standard"} component={Home} />
+      <Route path={"/saved"} component={Saved} />
+      <Route path={"/notice/:id"} component={NoticeDetail} />
       <Route path={"/keywords"} component={Home} />
       <Route path={"/settings"} component={Home} />
       <Route path={"/404"} component={NotFound} />
