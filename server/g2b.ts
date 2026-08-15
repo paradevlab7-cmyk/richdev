@@ -51,11 +51,14 @@ export async function collectForUser(userId: number, sourceType?: keyof typeof G
     const run = await db.insert(collectionRuns).values({ sourceType: type, status: "running" });
     const runId = insertId(run);
     try {
-      const end = new Date(); const start = new Date(end.getTime() - 5 * 86400000);
+      const end = new Date();
+      const lookbackDays = type === "award" ? 30 : 5;
+      const start = new Date(end.getTime() - lookbackDays * 86400000);
       let fetched = 0; let typeMatched = 0; const pageSize = 100; const maxPages = Math.max(1, Math.min(pageLimit, 5));
       for (let pageNo = 1; pageNo <= maxPages; pageNo += 1) {
         const url = new URL(`${G2B_ENDPOINTS[type]}/${OPERATIONS[type]}`);
         url.searchParams.set("serviceKey", normalizeServiceKey(serviceKey)); url.searchParams.set("pageNo", String(pageNo)); url.searchParams.set("numOfRows", String(pageSize)); url.searchParams.set("type", "json");
+        if (type === "award") url.searchParams.set("inqryDiv", "1");
         url.searchParams.set("inqryBgnDt", formatApiDate(start)); url.searchParams.set("inqryEndDt", formatApiDate(end));
         const payload = await getJson(url); const items = toItems(payload); const available = totalCount(payload); if (!items.length) break;
         fetched += items.length; total += items.length;

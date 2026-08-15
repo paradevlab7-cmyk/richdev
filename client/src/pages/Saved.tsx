@@ -47,7 +47,8 @@ export default function Saved() {
               </div>
               <Badge variant="outline">개인 관리 목록</Badge>
             </CardHeader>
-            <CardContent className="overflow-x-auto p-0">
+            <CardContent className="p-0">
+              <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[920px] text-sm">
                 <thead className="bg-muted/40 text-muted-foreground">
                   <tr>
@@ -129,6 +130,24 @@ export default function Saved() {
                   )}
                 </tbody>
               </table>
+              </div>
+              <div className="divide-y md:hidden">
+                {data?.map(item => (
+                  <div key={item.saved.id} className="space-y-3 p-4">
+                    <div>
+                      <p className="font-medium leading-5">{item.notice.title}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{item.notice.agency && item.notice.agency !== "undefined" ? item.notice.agency : "기관 정보 없음"} · {item.notice.noticeDate ? new Date(item.notice.noticeDate).toLocaleDateString("ko-KR") : "날짜 정보 없음"}</p>
+                    </div>
+                    <div className="grid grid-cols-[116px_1fr] items-center gap-2">
+                      <span className="text-xs text-muted-foreground">상태</span>
+                      <select aria-label="관심공고 상태" className="h-9 rounded-md border bg-background px-2 text-sm" defaultValue={item.saved.status} onChange={event => update.mutate({ id: item.saved.id, status: event.target.value as SavedStatus })}>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+                    </div>
+                    <Input aria-label="관심공고 메모" defaultValue={item.saved.memo || ""} placeholder="검토 메모를 입력하세요" onBlur={event => update.mutate({ id: item.saved.id, memo: event.target.value })} />
+                    <div className="flex justify-end gap-1">{item.notice.originalUrl && <a aria-label="원문 보기" href={item.notice.originalUrl} target="_blank" rel="noreferrer" className="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-muted"><ExternalLink className="h-4 w-4" /></a>}<Button aria-label="관심공고 해제" variant="ghost" size="icon" onClick={() => remove.mutate({ noticeId: item.notice.id })}><Trash2 className="h-4 w-4" /></Button></div>
+                  </div>
+                ))}
+                {!isLoading && !data?.length && <div className="p-12 text-center text-muted-foreground"><Bookmark className="mx-auto mb-3 h-8 w-8 opacity-40" />검색 결과에서 북마크를 선택하면 이 목록에서 관리할 수 있습니다.</div>}
+              </div>
             </CardContent>
           </Card>
         </div>
