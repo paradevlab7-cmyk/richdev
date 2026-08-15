@@ -20,7 +20,7 @@ export async function listNotices(input: { q?: string; sourceType?: string; from
   const db = await getDb(); if (!db) return [];
   const filters = [];
   if (input.sourceType && input.sourceType !== "all") filters.push(eq(notices.sourceType, input.sourceType as any));
-  if (input.q) filters.push(or(like(notices.title, `%${input.q}%`), like(notices.agency, `%${input.q}%`), like(notices.itemName, `%${input.q}%`)));
+  if (input.q) filters.push(or(like(notices.title, `%${input.q}%`), like(notices.agency, `%${input.q}%`), like(notices.itemName, `%${input.q}%`), like(notices.rawJson, `%${input.q}%`)));
   if (input.from) filters.push(sql`${notices.noticeDate} >= ${input.from}`);
   if (input.to) filters.push(sql`${notices.noticeDate} <= ${input.to}`);
   return db.select().from(notices).where(filters.length ? and(...filters) : undefined).orderBy(desc(notices.noticeDate)).limit(input.limit ?? 100);

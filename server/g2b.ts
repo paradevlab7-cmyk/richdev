@@ -23,11 +23,12 @@ function first(...values: unknown[]) { return values.find(v => v !== undefined &
 function parseDate(value: unknown) { if (!value) return undefined; const d = new Date(String(value).replace(" ", "T")); return Number.isNaN(d.getTime()) ? undefined : d; }
 function parseNumber(value: unknown) { if (value === undefined || value === null || value === "") return undefined; const n = Number(String(value).replace(/,/g, "")); return Number.isFinite(n) ? n.toFixed(2) : undefined; }
 function toItems(payload: any): any[] { const body = payload?.response?.body ?? payload?.body ?? payload; const items = body?.items?.item ?? body?.items ?? []; return Array.isArray(items) ? items : items ? [items] : []; }
+function totalCount(payload: any) { const body = payload?.response?.body ?? payload?.body ?? payload; const count = Number(body?.totalCount ?? body?.totalCnt ?? 0); return Number.isFinite(count) ? count : 0; }
 function insertId(result: unknown) { const value = (result as any)?.insertId ?? (result as any)?.[0]?.insertId; const id = Number(value); if (!Number.isInteger(id) || id <= 0) throw new Error("수집 이력 ID를 확인할 수 없습니다."); return id; }
 function normalizeServiceKey(key: string) { try { return decodeURIComponent(key.trim()); } catch { return key.trim(); } }
 async function getJson(url: URL) { const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 25000); try { const response = await fetch(url, { signal: controller.signal, headers: { Accept: "application/json" } }); const body = await response.text(); if (!response.ok) throw new Error(`API ${response.status}: ${body.slice(0, 300)}`); try { const parsed = JSON.parse(body); const header = parsed?.response?.header; if (header?.resultCode && header.resultCode !== "00") throw new Error(`API ${header.resultCode}: ${header.resultMsg ?? "요청 실패"}`); return parsed; } catch (error) { if (error instanceof SyntaxError) throw new Error(`API가 JSON 대신 응답을 반환했습니다: ${body.slice(0, 300)}`); throw error; } } finally { clearTimeout(timeout); } }
 
-export async function collectForUser(userId: number, sourceType?: keyof typeof G2B_ENDPOINTS) {
+export async function collectForUser(userId: number, sourceType?: keyof typeof G2B_ENDPOINTS, pageLimit = 5) {
   const db = await getDb(); if (!db) throw new Error("DB unavailable");
   const settings = await getSettings(userId); const serviceKey = decryptSecret(settings?.dataServiceKey); if (!serviceKey) throw new Error("공공데이터 인증키가 설정되지 않았습니다.");
   const keywords = await listKeywords(userId); const types = sourceType ? [sourceType] : Object.keys(G2B_ENDPOINTS) as (keyof typeof G2B_ENDPOINTS)[];
@@ -37,22 +38,27 @@ export async function collectForUser(userId: number, sourceType?: keyof typeof G
     const runId = insertId(run);
     try {
       const end = new Date(); const start = new Date(end.getTime() - 5 * 86400000);
-      const url = new URL(`${G2B_ENDPOINTS[type]}/${OPERATIONS[type]}`);
-      url.searchParams.set("serviceKey", normalizeServiceKey(serviceKey)); url.searchParams.set("pageNo", "1"); url.searchParams.set("numOfRows", "100"); url.searchParams.set("type", "json");
-      url.searchParams.set("inqryBgnDt", formatApiDate(start)); url.searchParams.set("inqryEndDt", formatApiDate(end));
-      const payload = await getJson(url); const items = toItems(payload); total += items.length;
-      for (const item of items) {
-        const noticeId = String(first(item.bidNtceNo, item.ntceNo, item.cntrctNo, item.untyCntrctNo, item.prcrmntReqNo, item.rgstNo) ?? `${type}-${item.bidNtceNm ?? item.cntrctNm ?? JSON.stringify(item).slice(0, 40)}`);
-        const title = String(first(item.bidNtceNm, item.ntceNm, item.cntrctNm, item.prdctNm, item.bsnsNm, "제목 미상"));
-        const text = `${title} ${item.cntrctInsttNm ?? item.dminsttNm ?? item.orderInsttNm ?? ""}`.toLowerCase();
-        const matchedKeywords = keywords.filter(k => k.isActive && text.includes(k.keyword.toLowerCase())); if (matchedKeywords.length) matched += 1;
-        const noticeDate = parseDate(first(item.bidNtceDt, item.ntceDt, item.opengDt, item.cntrctDate, item.regDt));
-        const deadline = parseDate(first(item.bidClseDt, item.bidNtceEndDt, item.rcptEndDt));
-        const baseAmount = parseNumber(first(item.presmptPrice, item.bssamt, item.cntrctAmt, item.totCntrctAmt)); const awardAmount = parseNumber(first(item.sucsfbidAmt, item.finalSucsfBidAmt, item.cntrctAmt)); const awardRate = parseNumber(first(item.sucsfbidRate, item.bidRate));
-        const originalUrl = first(item.bidNtceUrl, item.ntceUrl, item.linkUrl, item.g2bLink) as string | undefined;
-        await db.insert(notices).values({ sourceType: type, noticeId, title, agency: String(first(item.cntrctInsttNm, item.dminsttNm, item.orderInsttNm, "")), itemName: String(first(item.prdctNm, item.bidNtceNm, "")), noticeDate, deadline, baseAmount, awardAmount, awardRate, originalUrl, rawJson: JSON.stringify(item), sourceUpdatedAt: new Date() }).onDuplicateKeyUpdate({ set: { title, agency: String(first(item.cntrctInsttNm, item.dminsttNm, "")), rawJson: JSON.stringify(item), sourceUpdatedAt: new Date() } });
+      let fetched = 0; let typeMatched = 0; const pageSize = 100; const maxPages = Math.max(1, Math.min(pageLimit, 5));
+      for (let pageNo = 1; pageNo <= maxPages; pageNo += 1) {
+        const url = new URL(`${G2B_ENDPOINTS[type]}/${OPERATIONS[type]}`);
+        url.searchParams.set("serviceKey", normalizeServiceKey(serviceKey)); url.searchParams.set("pageNo", String(pageNo)); url.searchParams.set("numOfRows", String(pageSize)); url.searchParams.set("type", "json");
+        url.searchParams.set("inqryBgnDt", formatApiDate(start)); url.searchParams.set("inqryEndDt", formatApiDate(end));
+        const payload = await getJson(url); const items = toItems(payload); const available = totalCount(payload); if (!items.length) break;
+        fetched += items.length; total += items.length;
+        for (const item of items) {
+          const noticeId = String(first(item.bidNtceNo, item.ntceNo, item.cntrctNo, item.untyCntrctNo, item.prcrmntReqNo, item.rgstNo) ?? `${type}-${item.bidNtceNm ?? item.cntrctNm ?? JSON.stringify(item).slice(0, 40)}`);
+          const title = String(first(item.bidNtceNm, item.ntceNm, item.cntrctNm, item.prdctNm, item.bsnsNm, "제목 미상"));
+          const text = `${title} ${item.cntrctInsttNm ?? item.dminsttNm ?? item.orderInsttNm ?? ""}`.toLowerCase();
+          const matchedKeywords = keywords.filter(k => k.isActive && text.includes(k.keyword.toLowerCase())); if (matchedKeywords.length) { matched += 1; typeMatched += 1; }
+          const noticeDate = parseDate(first(item.bidNtceDt, item.ntceDt, item.opengDt, item.cntrctDate, item.cntrctCnclsDate, item.dataBssDate, item.regDt));
+          const deadline = parseDate(first(item.bidClseDt, item.bidNtceEndDt, item.rcptEndDt));
+          const baseAmount = parseNumber(first(item.presmptPrice, item.bssamt, item.cntrctAmt, item.totCntrctAmt)); const awardAmount = parseNumber(first(item.sucsfbidAmt, item.finalSucsfBidAmt, item.cntrctAmt)); const awardRate = parseNumber(first(item.sucsfbidRate, item.bidRate));
+          const originalUrl = first(item.bidNtceUrl, item.ntceUrl, item.cntrctInfoUrl, item.linkUrl, item.g2bLink) as string | undefined;
+          await db.insert(notices).values({ sourceType: type, noticeId, title, agency: String(first(item.cntrctInsttNm, item.dminsttNm, item.orderInsttNm, "")), itemName: String(first(item.prdctNm, item.bidNtceNm, "")), noticeDate, deadline, baseAmount, awardAmount, awardRate, originalUrl, rawJson: JSON.stringify(item), sourceUpdatedAt: new Date() }).onDuplicateKeyUpdate({ set: { title, agency: String(first(item.cntrctInsttNm, item.dminsttNm, "")), itemName: String(first(item.prdctNm, item.bidNtceNm, "")), noticeDate, deadline, baseAmount, awardAmount, awardRate, originalUrl, rawJson: JSON.stringify(item), sourceUpdatedAt: new Date() } });
+        }
+        if (items.length < pageSize || (available > 0 && fetched >= available)) break;
       }
-      await db.update(collectionRuns).set({ status: "success", fetchedCount: items.length, matchedCount: matched, finishedAt: new Date() }).where(eq(collectionRuns.id, runId));
+      await db.update(collectionRuns).set({ status: "success", fetchedCount: fetched, matchedCount: typeMatched, finishedAt: new Date() }).where(eq(collectionRuns.id, runId));
     } catch (error) { const message = error instanceof Error ? error.message : String(error); failures.push({ sourceType: type, message }); await db.update(collectionRuns).set({ status: "failed", errorMessage: message.slice(0, 2000), finishedAt: new Date() }).where(eq(collectionRuns.id, runId)); }
   }
   return { total, matched, failures };

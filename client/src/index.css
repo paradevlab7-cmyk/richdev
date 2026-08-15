@@ -114,6 +114,10 @@
 }
 
 @layer base {
+
+  input[type="password"] {
+    -webkit-text-security: none;
+  }
   * {
     @apply border-border outline-ring/50;
   }
