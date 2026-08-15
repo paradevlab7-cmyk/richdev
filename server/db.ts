@@ -16,6 +16,13 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   await db.insert(users).values(values).onDuplicateKeyUpdate({ set: { name: values.name, email: values.email, loginMethod: values.loginMethod, lastSignedIn: values.lastSignedIn } });
 }
 export async function getUserByOpenId(openId: string) { const db = await getDb(); if (!db) return undefined; return (await db.select().from(users).where(eq(users.openId, openId)).limit(1))[0]; }
+export async function getConfiguredCollectionOwner() {
+  const db = await getDb();
+  if (!db) return undefined;
+  const setting = (await db.select({ userId: userSettings.userId }).from(userSettings).orderBy(desc(userSettings.updatedAt)).limit(1))[0];
+  if (!setting) return undefined;
+  return (await db.select().from(users).where(eq(users.id, setting.userId)).limit(1))[0];
+}
 
 export async function listNotices(input: { q?: string; keywords?: string[]; sourceType?: string; from?: Date; to?: Date; limit?: number }) {
   const db = await getDb(); if (!db) return [];

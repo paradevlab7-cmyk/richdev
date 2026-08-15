@@ -11,7 +11,7 @@ import { serveStatic, setupVite } from "./vite";
 import { sdk } from "./sdk";
 import { ENV } from "./env";
 import { collectForUser, collectSpecBackfill, sendTelegram } from "../g2b";
-import { getUserByOpenId } from "../db";
+import { getConfiguredCollectionOwner, getUserByOpenId } from "../db";
 import { buildDailyDigest, sendDigestEmail } from "../email";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -53,7 +53,7 @@ async function startServer() {
     try {
       const cronUser = await sdk.authenticateRequest(req);
       if (!cronUser.isCron) return res.status(403).json({ error: "cron-only" });
-      const owner = await getUserByOpenId(ENV.ownerOpenId);
+      const owner = await getUserByOpenId(ENV.ownerOpenId) ?? await getConfiguredCollectionOwner();
       if (!owner) return res.json({ ok: true, skipped: "owner-not-found" });
       const result = await collectForUser(owner.id);
       if (mode === "daily") {
@@ -72,7 +72,7 @@ async function startServer() {
     try {
       const cronUser = await sdk.authenticateRequest(req);
       if (!cronUser.isCron) return res.status(403).json({ error: "cron-only" });
-      const owner = await getUserByOpenId(ENV.ownerOpenId);
+      const owner = await getUserByOpenId(ENV.ownerOpenId) ?? await getConfiguredCollectionOwner();
       if (!owner) return res.json({ ok: true, skipped: "owner-not-found" });
       const result = await collectSpecBackfill(owner.id);
       return res.json({ ok: true, result });
