@@ -157,7 +157,8 @@ async function collectTypeBatch(userId: number, type: keyof typeof G2B_ENDPOINTS
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const storedCount = await countStoredNotices(type, start, end);
-    await db.update(collectionRuns).set({ status: "failed", fetchedCount, totalAvailable, storedCount, currentPage, totalPages: totalAvailable ? Math.ceil(totalAvailable / pageSize) : 0, matchedCount, errorMessage: message.slice(0, 2000), finishedAt: new Date(), isBackground: Boolean(options.isBackground) }).where(eq(collectionRuns.id, runId));
+    const keepForRetry = Boolean(options.activeRun && options.isBackground);
+    await db.update(collectionRuns).set({ status: keepForRetry ? "running" : "failed", fetchedCount, totalAvailable, storedCount, currentPage, totalPages: totalAvailable ? Math.ceil(totalAvailable / pageSize) : 0, matchedCount, errorMessage: message.slice(0, 2000), finishedAt: keepForRetry ? null : new Date(), isBackground: Boolean(options.isBackground) }).where(eq(collectionRuns.id, runId));
     return { fetched: batchFetched, matched: batchMatched, failures: [{ sourceType: type, message }], runId, isComplete: false };
   }
 }
