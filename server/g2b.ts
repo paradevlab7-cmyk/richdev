@@ -74,7 +74,7 @@ export async function getJson(url: URL, options: { fetchImpl?: typeof fetch; ret
   const fetchImpl = options.fetchImpl ?? fetch;
   const retryDelayMs = options.retryDelayMs ?? 500;
   let lastError: unknown;
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 25000);
     try {
@@ -92,7 +92,7 @@ export async function getJson(url: URL, options: { fetchImpl?: typeof fetch; ret
       }
     } catch (error) {
       lastError = error;
-      if (attempt === 0) await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+      if (attempt < 2) await new Promise(resolve => setTimeout(resolve, retryDelayMs * (attempt + 1)));
     } finally {
       clearTimeout(timeout);
     }

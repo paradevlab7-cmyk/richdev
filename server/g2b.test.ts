@@ -55,21 +55,22 @@ describe("G2B field aliases", () => {
 });
 
 describe("G2B API retry", () => {
-  it("retries a transient request error once before returning the parsed API payload", async () => {
+  it("retries transient request errors before returning the parsed API payload", async () => {
     const mockFetch = vi.fn()
+      .mockRejectedValueOnce(new Error("temporary network failure"))
       .mockRejectedValueOnce(new Error("temporary network failure"))
       .mockResolvedValueOnce(new Response(JSON.stringify({ response: { header: { resultCode: "00" }, body: { items: [] } } }), { status: 200 }));
 
     const payload = await getJson(new URL("https://example.test/spec"), { fetchImpl: mockFetch as unknown as typeof fetch, retryDelayMs: 0 });
 
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch).toHaveBeenCalledTimes(3);
     expect(payload.response.header.resultCode).toBe("00");
   });
 
-  it("returns an error only after the retry also fails", async () => {
+  it("returns an error only after all retries fail", async () => {
     const mockFetch = vi.fn().mockRejectedValue(new Error("network unavailable"));
 
     await expect(getJson(new URL("https://example.test/spec"), { fetchImpl: mockFetch as unknown as typeof fetch, retryDelayMs: 0 })).rejects.toThrow("network unavailable");
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch).toHaveBeenCalledTimes(3);
   });
 });
