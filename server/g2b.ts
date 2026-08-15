@@ -42,7 +42,7 @@ function insertId(result: unknown) { const value = (result as any)?.insertId ?? 
 function normalizeServiceKey(key: string) { try { return decodeURIComponent(key.trim()); } catch { return key.trim(); } }
 async function getJson(url: URL) { const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 25000); try { const response = await fetch(url, { signal: controller.signal, headers: { Accept: "application/json" } }); const body = await response.text(); if (!response.ok) throw new Error(`API ${response.status}: ${body.slice(0, 300)}`); try { const parsed = JSON.parse(body); const header = parsed?.response?.header; if (header?.resultCode && header.resultCode !== "00") throw new Error(`API ${header.resultCode}: ${header.resultMsg ?? "요청 실패"}`); return parsed; } catch (error) { if (error instanceof SyntaxError) throw new Error(`API가 JSON 대신 응답을 반환했습니다: ${body.slice(0, 300)}`); throw error; } } finally { clearTimeout(timeout); } }
 
-export async function collectForUser(userId: number, sourceType?: keyof typeof G2B_ENDPOINTS, pageLimit = 5) {
+export async function collectForUser(userId: number, sourceType?: keyof typeof G2B_ENDPOINTS, pageLimit = 5, requestedDays = 5) {
   const db = await getDb(); if (!db) throw new Error("DB unavailable");
   const settings = await getSettings(userId); const serviceKey = decryptSecret(settings?.dataServiceKey); if (!serviceKey) throw new Error("공공데이터 인증키가 설정되지 않았습니다.");
   const keywords = await listKeywords(userId); const types = sourceType ? [sourceType] : Object.keys(G2B_ENDPOINTS) as (keyof typeof G2B_ENDPOINTS)[];
@@ -52,7 +52,9 @@ export async function collectForUser(userId: number, sourceType?: keyof typeof G
     const runId = insertId(run);
     try {
       const end = new Date();
-      const lookbackDays = type === "award" ? 30 : 5;
+      const normalizedDays = Math.max(1, Math.min(requestedDays, 180));
+      // 낙찰정보서비스는 API 입력 범위 제한이 있어 최근 30일까지만 직접 조회한다.
+      const lookbackDays = type === "award" ? Math.min(normalizedDays, 30) : normalizedDays;
       const start = new Date(end.getTime() - lookbackDays * 86400000);
       let fetched = 0; let typeMatched = 0; const pageSize = 100; const maxPages = Math.max(1, Math.min(pageLimit, 5));
       for (let pageNo = 1; pageNo <= maxPages; pageNo += 1) {
