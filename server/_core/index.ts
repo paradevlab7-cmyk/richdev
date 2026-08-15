@@ -49,13 +49,13 @@ async function startServer() {
       createContext,
     })
   );
-  const scheduledHandler = async (req: express.Request, res: express.Response, mode: "hourly" | "daily") => {
+  const scheduledHandler = async (req: express.Request, res: express.Response, mode: "hourly" | "daily" | "six-hour") => {
     try {
       const cronUser = await sdk.authenticateRequest(req);
       if (!cronUser.isCron) return res.status(403).json({ error: "cron-only" });
       const owner = await getUserByOpenId(ENV.ownerOpenId) ?? await getConfiguredCollectionOwner();
       if (!owner) return res.json({ ok: true, skipped: "owner-not-found" });
-      const result = await collectForUser(owner.id);
+      const result = await collectForUser(owner.id, undefined, mode === "six-hour" ? 1 : 5);
       if (mode === "daily") {
         const title = "나라장터 08:00 키워드 매칭 요약";
         const digest = await buildDailyDigest(owner.id);
@@ -67,7 +67,7 @@ async function startServer() {
     } catch (error) { return res.status(500).json({ error: String(error), timestamp: new Date().toISOString() }); }
   };
   app.post("/api/scheduled/g2b-hourly", (req, res) => scheduledHandler(req, res, "hourly"));
-  app.post("/api/scheduled/g2b-six-hour", (req, res) => scheduledHandler(req, res, "hourly"));
+  app.post("/api/scheduled/g2b-six-hour", (req, res) => scheduledHandler(req, res, "six-hour"));
   app.post("/api/scheduled/g2b-daily", (req, res) => scheduledHandler(req, res, "daily"));
   app.post("/api/scheduled/g2b-spec-backfill", async (req, res) => {
     try {

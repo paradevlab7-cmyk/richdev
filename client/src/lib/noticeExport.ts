@@ -14,8 +14,8 @@ export type ExportableNotice = {
 
 const formatDate = (value: ExportableNotice["noticeDate"]) => value ? new Date(value).toLocaleDateString("ko-KR") : "";
 
-export function exportNoticesToExcel(records: ExportableNotice[], fileName: string) {
-  const rows = records.map((notice, index) => ({
+export function toNoticeExportRows(records: ExportableNotice[]) {
+  return records.map((notice, index) => ({
     번호: index + 1,
     구분: notice.sourceType,
     공고명: notice.title,
@@ -26,6 +26,10 @@ export function exportNoticesToExcel(records: ExportableNotice[], fileName: stri
     낙찰금액: notice.awardAmount ? Number(notice.awardAmount) : "",
     원문링크: notice.originalUrl ?? "",
   }));
+}
+
+export function exportNoticesToExcel(records: ExportableNotice[], fileName: string) {
+  const rows = toNoticeExportRows(records);
   const sheet = XLSX.utils.json_to_sheet(rows);
   sheet["!cols"] = [{ wch: 8 }, { wch: 14 }, { wch: 46 }, { wch: 22 }, { wch: 28 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 56 }];
   const workbook = XLSX.utils.book_new();
