@@ -53,7 +53,11 @@ export function mapG2BNoticeFields(item: Record<string, unknown>, fallback: keyo
   const sourceType = inferSourceType(item, fallback);
   const sourceId = String(first(item.bidNtceNo, item.ntceNo, item.cntrctNo, item.untyCntrctNo, item.prcrmntReqNo, item.rgstNo, item.bfSpecRgstNo, item.refNo) ?? `${item.bidNtceNm ?? item.cntrctNm ?? item.prdctClsfcNoNm ?? JSON.stringify(item).slice(0, 40)}`);
   const title = String(first(item.bidNtceNm, item.ntceNm, item.cntrctNm, item.prdctNm, item.prdctClsfcNoNm, item.bfSpecDtil, item.bsnsNm, "제목 미상"));
-  const agency = String(first(item.cntrctInsttNm, item.dminsttNm, item.orderInsttNm, item.rlDminsttNm, item.ntceInsttNm, item.dmndInsttNm, ""));
+  const agency = sourceType === "bid"
+    ? String(first(item.ntceInsttNm, item.dmndInsttNm, item.dminsttNm, item.orderInsttNm, ""))
+    : sourceType === "spec"
+      ? String(first(item.orderInsttNm, item.rlDminsttNm, item.dminsttNm, item.ntceInsttNm, ""))
+      : String(first(item.cntrctInsttNm, item.dminsttNm, item.ntceInsttNm, item.dmndInsttNm, ""));
   const itemName = String(first(item.prdctNm, item.bidNtceNm, item.prdctClsfcNoNm, item.bfSpecDtil, title));
   const noticeDate = parseDate(first(item.bidNtceDt, item.bidNtceDate, item.ntceDt, item.ntceDate, item.opengDt, item.opengDate, item.cntrctDate, item.cntrctCnclsDate, item.dataBssDate, item.regDt, item.rgstDt, item.bfSpecRgstDt));
   const deadline = parseDate(first(item.bidClseDt, item.bidNtceEndDt, dateWithTime(item.bidClseDate, item.bidClseTm), item.rcptEndDt, item.opninRgstClseDt));
