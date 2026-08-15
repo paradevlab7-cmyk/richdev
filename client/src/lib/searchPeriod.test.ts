@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createCollectionRequest, toDateInput } from "./searchPeriod";
+import { createCollectionRequest, DEFAULT_COLLECTION_DAYS, toDateInput } from "./searchPeriod";
 
 describe("search period helpers", () => {
   it("creates the 15-day default and month period in YYYY-MM-DD form", () => {
@@ -12,5 +12,10 @@ describe("search period helpers", () => {
   it("passes the selected collection duration without changing it", () => {
     expect(createCollectionRequest(30)).toEqual({ days: 30 });
     expect(createCollectionRequest(180)).toEqual({ days: 180 });
+  });
+
+  it("uses three months as the default collection duration", () => {
+    expect(DEFAULT_COLLECTION_DAYS).toBe(90);
+    expect(createCollectionRequest()).toEqual({ days: 90 });
   });
 });
