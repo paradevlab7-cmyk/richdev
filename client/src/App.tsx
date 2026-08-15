@@ -9,6 +9,7 @@ import Saved from "./pages/Saved";
 import NoticeDetail from "./pages/NoticeDetail";
 import Analysis from "./pages/Analysis";
 import CollectionHistory from "./pages/CollectionHistory";
+import SpecSearch from "./pages/SpecSearch";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -16,7 +17,7 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/bid"} component={Home} />
-      <Route path={"/spec"} component={Home} />
+      <Route path={"/spec"} component={SpecSearch} />
       <Route path={"/award"} component={Home} />
       <Route path={"/contract"} component={Home} />
       <Route path={"/standard"} component={Home} />

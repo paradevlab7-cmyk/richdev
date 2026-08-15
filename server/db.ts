@@ -24,7 +24,7 @@ export async function getConfiguredCollectionOwner() {
   return (await db.select().from(users).where(eq(users.id, setting.userId)).limit(1))[0];
 }
 
-export async function listNotices(input: { q?: string; keywords?: string[]; sourceType?: string; from?: Date; to?: Date; limit?: number }) {
+export async function listNotices(input: { q?: string; keywords?: string[]; sourceType?: string; from?: Date; to?: Date; limit?: number; offset?: number }) {
   const db = await getDb(); if (!db) return [];
   const filters = [];
   if (input.sourceType && input.sourceType !== "all") filters.push(eq(notices.sourceType, input.sourceType as any));
@@ -32,7 +32,7 @@ export async function listNotices(input: { q?: string; keywords?: string[]; sour
   if (input.keywords?.length) filters.push(or(...input.keywords.map(keyword => or(like(notices.title, `%${keyword}%`), like(notices.agency, `%${keyword}%`), like(notices.itemName, `%${keyword}%`), like(notices.rawJson, `%${keyword}%`)))));
   if (input.from) filters.push(sql`${notices.noticeDate} >= ${input.from}`);
   if (input.to) filters.push(sql`${notices.noticeDate} <= ${input.to}`);
-  return db.select().from(notices).where(filters.length ? and(...filters) : undefined).orderBy(desc(notices.noticeDate)).limit(input.limit ?? 500);
+  return db.select().from(notices).where(filters.length ? and(...filters) : undefined).orderBy(desc(notices.noticeDate)).limit(input.limit ?? 500).offset(input.offset ?? 0);
 }
 export async function getNoticeStats() {
   const db = await getDb();
@@ -47,6 +47,19 @@ export async function listKeywords(userId: number) { const db = await getDb(); i
 export async function listSaved(userId: number) { const db = await getDb(); if (!db) return []; return db.select({ saved: savedNotices, notice: notices }).from(savedNotices).innerJoin(notices, eq(savedNotices.noticeId, notices.id)).where(eq(savedNotices.userId, userId)).orderBy(desc(savedNotices.updatedAt)); }
 export async function getSettings(userId: number) { const db = await getDb(); if (!db) return undefined; return (await db.select().from(userSettings).where(eq(userSettings.userId, userId)).limit(1))[0]; }
 export async function getCollectionRuns() { const db = await getDb(); if (!db) return []; return db.select().from(collectionRuns).orderBy(desc(collectionRuns.startedAt)).limit(10); }
+export async function getCollectionDailyStats(days = 7) {
+  const db = await getDb();
+  if (!db) return [];
+  const since = new Date();
+  since.setDate(since.getDate() - (days - 1));
+  since.setHours(0, 0, 0, 0);
+  const day = sql<string>`DATE(\`collection_runs\`.\`startedAt\`)`;
+  return db.select({
+    day,
+    success: sql<number>`SUM(CASE WHEN ${collectionRuns.status} = 'success' THEN 1 ELSE 0 END)`,
+    failed: sql<number>`SUM(CASE WHEN ${collectionRuns.status} = 'failed' THEN 1 ELSE 0 END)`,
+  }).from(collectionRuns).where(sql`${collectionRuns.startedAt} >= ${since}`).groupBy(day).orderBy(day);
+}
 export async function estimateBid(input: { agency?: string; itemName?: string; baseAmount: number }) {
   const rows = await listNotices({ q: input.itemName || input.agency, sourceType: "award", limit: 200 });
   const filtered = rows.filter(row => (!input.agency || row.agency?.includes(input.agency)) && (!input.itemName || `${row.title} ${row.itemName ?? ""}`.includes(input.itemName)) && row.awardRate);
