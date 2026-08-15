@@ -24,11 +24,13 @@ export async function getConfiguredCollectionOwner() {
   return (await db.select().from(users).where(eq(users.id, setting.userId)).limit(1))[0];
 }
 
-export async function listNotices(input: { q?: string; keywords?: string[]; sourceType?: string; from?: Date; to?: Date; limit?: number; offset?: number }) {
+export async function listNotices(input: { q?: string; keywords?: string[]; sourceType?: string; agency?: string; contact?: string; from?: Date; to?: Date; limit?: number; offset?: number }) {
   const db = await getDb(); if (!db) return [];
   const filters = [];
   if (input.sourceType && input.sourceType !== "all") filters.push(eq(notices.sourceType, input.sourceType as any));
   if (input.q) filters.push(or(like(notices.title, `%${input.q}%`), like(notices.agency, `%${input.q}%`), like(notices.itemName, `%${input.q}%`), like(notices.rawJson, `%${input.q}%`)));
+  if (input.agency) filters.push(or(like(notices.agency, `%${input.agency}%`), like(notices.rawJson, `%${input.agency}%`)));
+  if (input.contact) filters.push(like(notices.rawJson, `%${input.contact}%`));
   if (input.keywords?.length) filters.push(or(...input.keywords.map(keyword => or(like(notices.title, `%${keyword}%`), like(notices.agency, `%${keyword}%`), like(notices.itemName, `%${keyword}%`), like(notices.rawJson, `%${keyword}%`)))));
   if (input.from) filters.push(sql`${notices.noticeDate} >= ${input.from}`);
   if (input.to) filters.push(sql`${notices.noticeDate} <= ${input.to}`);
