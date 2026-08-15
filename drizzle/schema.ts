@@ -43,6 +43,16 @@ export const monitoringKeywords = mysqlTable("monitoring_keywords", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+export const favoriteFilters = mysqlTable("favorite_filters", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 120 }).notNull(),
+  sourceType: varchar("sourceType", { length: 32 }).default("spec").notNull(),
+  queryJson: text("queryJson").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export const notices = mysqlTable("notices", {
   id: int("id").autoincrement().primaryKey(),
   sourceType: mysqlEnum("sourceType", ["bid", "spec", "award", "contract", "standard"]).notNull(),

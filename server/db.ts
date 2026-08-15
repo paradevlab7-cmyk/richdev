@@ -2,7 +2,7 @@ import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { count } from "drizzle-orm";
 import { ENV } from "./_core/env";
-import { InsertUser, users, userSettings, monitoringKeywords, notices, savedNotices, collectionRuns } from "../drizzle/schema";
+import { InsertUser, users, userSettings, monitoringKeywords, favoriteFilters, notices, savedNotices, collectionRuns } from "../drizzle/schema";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
@@ -44,6 +44,7 @@ export async function getNoticeStats() {
 }
 export async function getNotice(id: number) { const db = await getDb(); if (!db) return undefined; return (await db.select().from(notices).where(eq(notices.id, id)).limit(1))[0]; }
 export async function listKeywords(userId: number) { const db = await getDb(); if (!db) return []; return db.select().from(monitoringKeywords).where(eq(monitoringKeywords.userId, userId)).orderBy(desc(monitoringKeywords.createdAt)); }
+export async function listFavoriteFilters(userId: number) { const db = await getDb(); if (!db) return []; return db.select().from(favoriteFilters).where(eq(favoriteFilters.userId, userId)).orderBy(desc(favoriteFilters.updatedAt)); }
 export async function listSaved(userId: number) { const db = await getDb(); if (!db) return []; return db.select({ saved: savedNotices, notice: notices }).from(savedNotices).innerJoin(notices, eq(savedNotices.noticeId, notices.id)).where(eq(savedNotices.userId, userId)).orderBy(desc(savedNotices.updatedAt)); }
 export async function getSettings(userId: number) { const db = await getDb(); if (!db) return undefined; return (await db.select().from(userSettings).where(eq(userSettings.userId, userId)).limit(1))[0]; }
 export async function getCollectionRuns() { const db = await getDb(); if (!db) return []; return db.select().from(collectionRuns).orderBy(desc(collectionRuns.startedAt)).limit(10); }
