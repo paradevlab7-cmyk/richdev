@@ -4,7 +4,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { and, desc, eq } from "drizzle-orm";
-import { estimateBid, getDb, getCollectionRuns, getNotice, getSettings, listKeywords, listNotices, listSaved } from "./db";
+import { estimateBid, getDb, getCollectionRuns, getNotice, getNoticeStats, getSettings, listKeywords, listNotices, listSaved } from "./db";
 import { collectForUser } from "./g2b";
 import { decryptSecret, encryptSecret } from "./secure";
 import { monitoringKeywords, notices, savedNotices, userSettings } from "../drizzle/schema";
@@ -14,9 +14,9 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({ me: publicProcedure.query(opts => opts.ctx.user), logout: publicProcedure.mutation(({ ctx }) => { ctx.res.clearCookie(COOKIE_NAME, { ...getSessionCookieOptions(ctx.req), maxAge: -1 }); return { success: true } as const; }) }),
   notices: router({
-    list: protectedProcedure.input(z.object({ q: z.string().optional(), sourceType: z.enum(["all", ...sourceTypes]).default("all"), from: z.string().optional(), to: z.string().optional() })).query(({ input }) => listNotices({ ...input, from: input.from ? new Date(input.from) : undefined, to: input.to ? new Date(input.to) : undefined })),
+    list: protectedProcedure.input(z.object({ q: z.string().optional(), keywords: z.array(z.string().min(1)).max(20).optional(), sourceType: z.enum(["all", ...sourceTypes]).default("all"), from: z.string().optional(), to: z.string().optional() })).query(({ input }) => listNotices({ ...input, from: input.from ? new Date(input.from) : undefined, to: input.to ? new Date(input.to) : undefined })),
     detail: protectedProcedure.input(z.object({ id: z.number() })).query(({ input }) => getNotice(input.id)),
-    stats: protectedProcedure.query(async () => { const rows = await listNotices({ limit: 500 }); return { total: rows.length, bid: rows.filter(r => r.sourceType === "bid").length, spec: rows.filter(r => r.sourceType === "spec").length, award: rows.filter(r => r.sourceType === "award").length, contract: rows.filter(r => r.sourceType === "contract").length }; }),
+    stats: protectedProcedure.query(() => getNoticeStats()),
   }),
   keywords: router({
     list: protectedProcedure.query(({ ctx }) => listKeywords(ctx.user.id)),

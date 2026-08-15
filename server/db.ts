@@ -1,5 +1,6 @@
 import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { count } from "drizzle-orm";
 import { ENV } from "./_core/env";
 import { InsertUser, users, userSettings, monitoringKeywords, notices, savedNotices, collectionRuns } from "../drizzle/schema";
 
@@ -16,14 +17,23 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 }
 export async function getUserByOpenId(openId: string) { const db = await getDb(); if (!db) return undefined; return (await db.select().from(users).where(eq(users.openId, openId)).limit(1))[0]; }
 
-export async function listNotices(input: { q?: string; sourceType?: string; from?: Date; to?: Date; limit?: number }) {
+export async function listNotices(input: { q?: string; keywords?: string[]; sourceType?: string; from?: Date; to?: Date; limit?: number }) {
   const db = await getDb(); if (!db) return [];
   const filters = [];
   if (input.sourceType && input.sourceType !== "all") filters.push(eq(notices.sourceType, input.sourceType as any));
   if (input.q) filters.push(or(like(notices.title, `%${input.q}%`), like(notices.agency, `%${input.q}%`), like(notices.itemName, `%${input.q}%`), like(notices.rawJson, `%${input.q}%`)));
+  if (input.keywords?.length) filters.push(or(...input.keywords.map(keyword => or(like(notices.title, `%${keyword}%`), like(notices.agency, `%${keyword}%`), like(notices.itemName, `%${keyword}%`), like(notices.rawJson, `%${keyword}%`)))));
   if (input.from) filters.push(sql`${notices.noticeDate} >= ${input.from}`);
   if (input.to) filters.push(sql`${notices.noticeDate} <= ${input.to}`);
   return db.select().from(notices).where(filters.length ? and(...filters) : undefined).orderBy(desc(notices.noticeDate)).limit(input.limit ?? 500);
+}
+export async function getNoticeStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, bid: 0, spec: 0, award: 0, contract: 0, standard: 0 };
+  const rows = await db.select({ sourceType: notices.sourceType, total: count() }).from(notices).groupBy(notices.sourceType);
+  const stats = new Map(rows.map(row => [row.sourceType, Number(row.total)]));
+  const bid = stats.get("bid") ?? 0; const spec = stats.get("spec") ?? 0; const award = stats.get("award") ?? 0; const contract = stats.get("contract") ?? 0; const standard = stats.get("standard") ?? 0;
+  return { total: bid + spec + award + contract + standard, bid, spec, award, contract, standard };
 }
 export async function getNotice(id: number) { const db = await getDb(); if (!db) return undefined; return (await db.select().from(notices).where(eq(notices.id, id)).limit(1))[0]; }
 export async function listKeywords(userId: number) { const db = await getDb(); if (!db) return []; return db.select().from(monitoringKeywords).where(eq(monitoringKeywords.userId, userId)).orderBy(desc(monitoringKeywords.createdAt)); }
