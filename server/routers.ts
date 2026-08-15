@@ -4,7 +4,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { and, desc, eq } from "drizzle-orm";
-import { estimateBid, getCollectionDailyStats, getDb, getCollectionRuns, getNotice, getNoticeStats, getSettings, listFavoriteFilters, listKeywords, listNotices, listSaved } from "./db";
+import { estimateBid, getCollectionDailyStats, getCompanyHistory, getDb, getCollectionRuns, getNotice, getNoticeStats, getSettings, listFavoriteFilters, listKeywords, listNotices, listSaved } from "./db";
 import { collectForUser } from "./g2b";
 import { decryptSecret, encryptSecret } from "./secure";
 import { parseEndOfDay, parseStartOfDay } from "./dateRange";
@@ -12,12 +12,14 @@ import { favoriteFilters, monitoringKeywords, notices, savedNotices, userSetting
 
 const sourceTypes = ["bid", "spec", "award", "contract", "standard"] as const;
 export const collectionDailyStatsInput = z.object({ days: z.number().int().min(1).max(90).default(7) });
+export const companyHistoryInput = z.object({ companyName: z.string().trim().min(1).max(200), limit: z.number().int().min(1).max(100).default(50) });
 export const appRouter = router({
   system: systemRouter,
   auth: router({ me: publicProcedure.query(opts => opts.ctx.user), logout: publicProcedure.mutation(({ ctx }) => { ctx.res.clearCookie(COOKIE_NAME, { ...getSessionCookieOptions(ctx.req), maxAge: -1 }); return { success: true } as const; }) }),
   notices: router({
     list: protectedProcedure.input(z.object({ q: z.string().optional(), keywords: z.array(z.string().min(1)).max(20).optional(), sourceType: z.enum(["all", ...sourceTypes]).default("all"), agency: z.string().max(255).optional(), contact: z.string().max(255).optional(), from: z.string().optional(), to: z.string().optional(), limit: z.number().int().min(1).max(500).optional(), offset: z.number().int().min(0).optional() })).query(({ input }) => listNotices({ ...input, from: parseStartOfDay(input.from), to: parseEndOfDay(input.to) })),
     detail: protectedProcedure.input(z.object({ id: z.number() })).query(({ input }) => getNotice(input.id)),
+    companyHistory: protectedProcedure.input(companyHistoryInput).query(({ input }) => getCompanyHistory(input.companyName, input.limit)),
     stats: protectedProcedure.query(() => getNoticeStats()),
   }),
   keywords: router({

@@ -9,9 +9,9 @@ describe("notice detail model", () => {
 
   it("prefers the contract detail link and exposes documented service fields", () => {
     const url = getOriginalNoticeUrl("contract", { cntrctDtlInfoUrl: "https://www.g2b.go.kr/contract/detail" });
-    const groups = getServiceDetailGroups("contract", { untyCntrctNo: "R26TA0001", cntrctNm: "계약", totCntrctAmt: "100000", corpList: "[1^업체]" });
+    const groups = getServiceDetailGroups("contract", { untyCntrctNo: "R26TA0001", cntrctNm: "계약", totCntrctAmt: "100000", rprsntCorpNm: "푸드원" });
     expect(url).toBe("https://www.g2b.go.kr/contract/detail");
-    expect(groups.flatMap(group => group.fields).map(field => field.label)).toEqual(expect.arrayContaining(["통합계약번호", "총계약금액", "업체목록"]));
+    expect(groups.flatMap(group => group.fields).map(field => field.label)).toEqual(expect.arrayContaining(["통합계약번호", "총계약금액", "대표 계약업체"]));
   });
 
   it("parses related bid notice numbers from pre-specification data", () => {

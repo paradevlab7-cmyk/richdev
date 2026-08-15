@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AttachmentLinks, toAttachments } from "./NoticeDetail";
+import { AttachmentLinks, DetailGroupCard, toAttachments } from "./NoticeDetail";
 import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
 
@@ -23,5 +23,15 @@ describe("AttachmentLinks", () => {
 
     expect(html).toContain(`href=\"${url.replace(/&/g, "&amp;")}\"`);
     expect(html).toContain("사전규격 첨부자료 1");
+  });
+});
+
+describe("DetailGroupCard", () => {
+  it("renders the representative contract company as an accessible history trigger", () => {
+    const html = renderToStaticMarkup(<DetailGroupCard group={{ title: "수요·계약 상대자", fields: [{ label: "대표 계약업체", value: "푸드원" }] }} />);
+
+    expect(html).toContain("푸드원");
+    expect(html).toContain("button");
+    expect(html).toContain("푸드원의 과거 낙찰 및 계약 이력 보기");
   });
 });

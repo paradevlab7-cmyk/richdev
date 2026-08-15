@@ -55,7 +55,7 @@ export function getServiceDetailGroups(sourceType: string, raw: RawNotice): Deta
     { title: "계약 개요", fields: fields(raw, [["통합계약번호", ["untyCntrctNo"]], ["확정계약번호", ["dcsnCntrctNo"]], ["계약참조번호", ["cntrctRefNo"]], ["계약명", ["cntrctNm"]], ["업무구분", ["bsnsDivNm"]], ["계약체결일", ["cntrctCnclsDate", "cntrctDate"]], ["계약기간", ["cntrctPrd"]], ["계약방법", ["cntrctCnclsMthdNm"]]]) },
     { title: "계약 금액·조건", fields: fields(raw, [["총계약금액", ["totCntrctAmt"]], ["금차계약금액", ["thtmCntrctAmt"]], ["보증금률", ["grntymnyRate"]], ["지급구분", ["payDivNm"]], ["지체상금률", ["dfrcmpnstRt"]], ["근거법률", ["baseLawNm"]], ["근거내역", ["baseDtls"]]]) },
     ...sharedInstitution,
-    { title: "수요·계약 상대자", fields: fields(raw, [["수요기관목록", ["dminsttList"]], ["업체목록", ["corpList"]], ["채권자", ["crdtrNm"]], ["공고번호", ["ntceNo"]], ["요청번호", ["reqNo"]]]) },
+    { title: "수요·계약 상대자", fields: fields(raw, [["대표 계약업체", ["rprsntCorpNm"]], ["사업자번호", ["rprsntCorpBizrno"]], ["대표자", ["rprsntCorpCeoNm"]], ["주소", ["rprsntCorpAdrs"]], ["연락처", ["rprsntCorpContactTel"]], ["수요기관목록", ["dminsttList"]], ["업체목록", ["corpList"]], ["채권자", ["crdtrNm"]], ["공고번호", ["ntceNo"]], ["요청번호", ["reqNo"]]]) },
   ];
   return [
     { title: "공고·입찰 일정", fields: fields(raw, [["공고번호", ["bidNtceNo"]], ["공고차수", ["bidNtceOrd"]], ["참조공고", ["refNtceNo", "refNo"]], ["공고상태", ["bidNtceSttusNm", "ntceKindNm"]], ["업무구분", ["bsnsDivNm"]], ["입찰개시", ["bidBeginDt", "bidBeginDate"]], ["입찰마감", ["bidClseDt", "bidClseDate"]], ["개찰일시", ["opengDt", "opengDate"]], ["개찰장소", ["opengPlce"]]]) },

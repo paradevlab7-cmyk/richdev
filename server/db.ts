@@ -45,6 +45,17 @@ export async function getNoticeStats() {
   return { total: bid + spec + award + contract + standard, bid, spec, award, contract, standard };
 }
 export async function getNotice(id: number) { const db = await getDb(); if (!db) return undefined; return (await db.select().from(notices).where(eq(notices.id, id)).limit(1))[0]; }
+export async function getCompanyHistory(companyName: string, limit = 50) {
+  const db = await getDb();
+  const normalizedName = companyName.trim();
+  if (!db || !normalizedName) return [];
+  const companyMatch = sql<boolean>`(
+    JSON_UNQUOTE(JSON_EXTRACT(${notices.rawJson}, '$.rprsntCorpNm')) = ${normalizedName}
+    OR JSON_UNQUOTE(JSON_EXTRACT(${notices.rawJson}, '$.bidwinnrNm')) = ${normalizedName}
+    OR JSON_UNQUOTE(JSON_EXTRACT(${notices.rawJson}, '$.sucsfbidCorpNm')) = ${normalizedName}
+  )`;
+  return db.select().from(notices).where(and(or(eq(notices.sourceType, "award"), eq(notices.sourceType, "contract")), companyMatch)).orderBy(desc(notices.noticeDate)).limit(Math.max(1, Math.min(limit, 100)));
+}
 export async function listKeywords(userId: number) { const db = await getDb(); if (!db) return []; return db.select().from(monitoringKeywords).where(eq(monitoringKeywords.userId, userId)).orderBy(desc(monitoringKeywords.createdAt)); }
 export async function listFavoriteFilters(userId: number) { const db = await getDb(); if (!db) return []; return db.select().from(favoriteFilters).where(eq(favoriteFilters.userId, userId)).orderBy(desc(favoriteFilters.updatedAt)); }
 export async function listSaved(userId: number) { const db = await getDb(); if (!db) return []; return db.select({ saved: savedNotices, notice: notices }).from(savedNotices).innerJoin(notices, eq(savedNotices.noticeId, notices.id)).where(eq(savedNotices.userId, userId)).orderBy(desc(savedNotices.updatedAt)); }
