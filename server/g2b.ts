@@ -27,6 +27,7 @@ const OPERATIONS = {
 function first(...values: unknown[]) { return values.find(v => v !== undefined && v !== null && String(v).trim() !== ""); }
 function parseDate(value: unknown) { if (!value) return undefined; const d = new Date(String(value).replace(" ", "T")); return Number.isNaN(d.getTime()) ? undefined : d; }
 function parseNumber(value: unknown) { if (value === undefined || value === null || value === "") return undefined; const n = Number(String(value).replace(/,/g, "")); return Number.isFinite(n) ? n.toFixed(2) : undefined; }
+function dateWithTime(date: unknown, time: unknown) { return date ? `${date}${time ? ` ${time}` : ""}` : undefined; }
 function toItems(payload: any): any[] { const body = payload?.response?.body ?? payload?.body ?? payload; const items = body?.items?.item ?? body?.items ?? []; return Array.isArray(items) ? items : items ? [items] : []; }
 function totalCount(payload: any) { const body = payload?.response?.body ?? payload?.body ?? payload; const count = Number(body?.totalCount ?? body?.totalCnt ?? 0); return Number.isFinite(count) ? count : 0; }
 function inferSourceType(item: Record<string, unknown>, fallback: keyof typeof G2B_ENDPOINTS): keyof typeof G2B_ENDPOINTS {
@@ -40,8 +41,21 @@ export function extractAttachments(item: Record<string, unknown>) {
   return Object.entries(item).flatMap(([key, value]) => {
     if (typeof value !== "string" || !/^https?:\/\//i.test(value)) return [];
     if (!/(atch|attach|file|download)/i.test(key)) return [];
-    return [{ name: key, url: value }];
+    const sequence = key.match(/(\d+)$/)?.[1];
+    const name = /^specDocFileUrl/i.test(key) ? `사전규격 첨부자료 ${sequence ?? ""}`.trim() : key;
+    return [{ name, url: value }];
   });
+}
+
+export function mapG2BNoticeFields(item: Record<string, unknown>, fallback: keyof typeof G2B_ENDPOINTS) {
+  const sourceType = inferSourceType(item, fallback);
+  const sourceId = String(first(item.bidNtceNo, item.ntceNo, item.cntrctNo, item.untyCntrctNo, item.prcrmntReqNo, item.rgstNo, item.bfSpecRgstNo, item.refNo) ?? `${item.bidNtceNm ?? item.cntrctNm ?? item.prdctClsfcNoNm ?? JSON.stringify(item).slice(0, 40)}`);
+  const title = String(first(item.bidNtceNm, item.ntceNm, item.cntrctNm, item.prdctNm, item.prdctClsfcNoNm, item.bfSpecDtil, item.bsnsNm, "제목 미상"));
+  const agency = String(first(item.cntrctInsttNm, item.dminsttNm, item.orderInsttNm, item.rlDminsttNm, item.ntceInsttNm, item.dmndInsttNm, ""));
+  const itemName = String(first(item.prdctNm, item.bidNtceNm, item.prdctClsfcNoNm, item.bfSpecDtil, title));
+  const noticeDate = parseDate(first(item.bidNtceDt, item.bidNtceDate, item.ntceDt, item.ntceDate, item.opengDt, item.opengDate, item.cntrctDate, item.cntrctCnclsDate, item.dataBssDate, item.regDt, item.rgstDt, item.bfSpecRgstDt));
+  const deadline = parseDate(first(item.bidClseDt, item.bidNtceEndDt, dateWithTime(item.bidClseDate, item.bidClseTm), item.rcptEndDt, item.opninRgstClseDt));
+  return { sourceType, noticeId: `${sourceType}:${sourceId}`, title, agency, itemName, noticeDate, deadline, baseAmount: parseNumber(first(item.presmptPrice, item.presmptPrce, item.bssamt, item.asignBdgtAmt, item.cntrctAmt, item.totCntrctAmt)), awardAmount: parseNumber(first(item.sucsfbidAmt, item.finalSucsfBidAmt, item.cntrctAmt)), awardRate: parseNumber(first(item.sucsfbidRate, item.bidRate)), originalUrl: first(item.bidNtceUrl, item.ntceUrl, item.cntrctInfoUrl, item.linkUrl, item.g2bLink) as string | undefined, attachmentsJson: JSON.stringify(extractAttachments(item)) };
 }
 function insertId(result: unknown) { const value = (result as any)?.insertId ?? (result as any)?.[0]?.insertId; const id = Number(value); if (!Number.isInteger(id) || id <= 0) throw new Error("수집 이력 ID를 확인할 수 없습니다."); return id; }
 function normalizeServiceKey(key: string) { try { return decodeURIComponent(key.trim()); } catch { return key.trim(); } }
@@ -128,21 +142,11 @@ async function collectTypeBatch(userId: number, type: keyof typeof G2B_ENDPOINTS
       if (!items.length) { reachedEnd = true; break; }
 
       for (const item of items) {
-        const resolvedType = inferSourceType(item, type);
-        const sourceId = String(first(item.bidNtceNo, item.ntceNo, item.cntrctNo, item.untyCntrctNo, item.prcrmntReqNo, item.rgstNo, item.bfSpecRgstNo, item.refNo) ?? `${item.bidNtceNm ?? item.cntrctNm ?? item.prdctClsfcNoNm ?? JSON.stringify(item).slice(0, 40)}`);
-        const noticeId = `${resolvedType}:${sourceId}`;
-        const title = String(first(item.bidNtceNm, item.ntceNm, item.cntrctNm, item.prdctNm, item.prdctClsfcNoNm, item.bfSpecDtil, item.bsnsNm, "제목 미상"));
-        const text = `${title} ${item.cntrctInsttNm ?? item.dminsttNm ?? item.orderInsttNm ?? ""} ${item.bfSpecDtil ?? ""}`.toLowerCase();
+        const mapped = mapG2BNoticeFields(item, type);
+        const text = `${mapped.title} ${mapped.agency} ${item.bfSpecDtil ?? ""}`.toLowerCase();
         const matchedKeywords = keywords.filter(k => k.isActive && text.includes(k.keyword.toLowerCase()));
         if (matchedKeywords.length) { matchedCount += 1; batchMatched += 1; }
-        const noticeDate = parseDate(first(item.bidNtceDt, item.ntceDt, item.opengDt, item.cntrctDate, item.cntrctCnclsDate, item.dataBssDate, item.regDt, item.rgstDt, item.bfSpecRgstDt));
-        const deadline = parseDate(first(item.bidClseDt, item.bidNtceEndDt, item.rcptEndDt, item.opninRgstClseDt));
-        const baseAmount = parseNumber(first(item.presmptPrice, item.bssamt, item.asignBdgtAmt, item.cntrctAmt, item.totCntrctAmt));
-        const awardAmount = parseNumber(first(item.sucsfbidAmt, item.finalSucsfBidAmt, item.cntrctAmt));
-        const awardRate = parseNumber(first(item.sucsfbidRate, item.bidRate));
-        const originalUrl = first(item.bidNtceUrl, item.ntceUrl, item.cntrctInfoUrl, item.linkUrl, item.g2bLink) as string | undefined;
-        const attachmentsJson = JSON.stringify(extractAttachments(item));
-        await db.insert(notices).values({ sourceType: resolvedType, noticeId, title, agency: String(first(item.cntrctInsttNm, item.dminsttNm, item.orderInsttNm, "")), itemName: String(first(item.prdctNm, item.bidNtceNm, "")), noticeDate, deadline, baseAmount, awardAmount, awardRate, originalUrl, attachmentsJson, rawJson: JSON.stringify(item), sourceUpdatedAt: new Date() }).onDuplicateKeyUpdate({ set: { sourceType: resolvedType, title, agency: String(first(item.cntrctInsttNm, item.dminsttNm, "")), itemName: String(first(item.prdctNm, item.bidNtceNm, "")), noticeDate, deadline, baseAmount, awardAmount, awardRate, originalUrl, attachmentsJson, rawJson: JSON.stringify(item), sourceUpdatedAt: new Date() } });
+        await db.insert(notices).values({ ...mapped, rawJson: JSON.stringify(item), sourceUpdatedAt: new Date() }).onDuplicateKeyUpdate({ set: { ...mapped, rawJson: JSON.stringify(item), sourceUpdatedAt: new Date() } });
       }
       fetchedCount += items.length;
       batchFetched += items.length;

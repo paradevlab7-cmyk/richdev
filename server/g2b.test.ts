@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { G2B_ENDPOINTS, getJson, resolveCollectionWindowDays } from "./g2b";
+import { G2B_ENDPOINTS, getJson, mapG2BNoticeFields, resolveCollectionWindowDays } from "./g2b";
 
 describe("G2B endpoint catalog", () => {
   it("keeps the five user-specified public API base URLs unchanged", () => {
@@ -20,6 +20,24 @@ describe("collection duration", () => {
     expect(resolveCollectionWindowDays("award", 15)).toBe(15);
     expect(resolveCollectionWindowDays("award", 30)).toBe(30);
     expect(resolveCollectionWindowDays("award", 180)).toBe(30);
+  });
+});
+
+describe("G2B field aliases", () => {
+  it("maps current bid API date, deadline and institution aliases instead of falling back to the collection date", () => {
+    const mapped = mapG2BNoticeFields({ bidNtceNo: "R26BK01672589", bidNtceNm: "FMX 물품 구매", bidNtceDate: "2026-08-10", bidClseDate: "2026-08-14", bidClseTm: "10:00", ntceInsttNm: "선진뷰티사이언스(주) 장항공장", presmptPrce: "320000000", bidNtceUrl: "https://www.g2b.go.kr/link/PNPE027_01/single/?bidPbancNo=R26BK01672589" }, "bid");
+    expect(mapped.agency).toBe("선진뷰티사이언스(주) 장항공장");
+    expect(mapped.noticeDate?.toISOString()).toContain("2026-08-10");
+    expect(mapped.deadline?.toISOString()).toContain("2026-08-14");
+    expect(mapped.baseAmount).toBe("320000000.00");
+  });
+
+  it("maps provided pre-specification institution, budget and document URLs", () => {
+    const mapped = mapG2BNoticeFields({ bfSpecRgstNo: "R26BD00263313", prdctClsfcNoNm: "디지털 복합기 임차 용역", orderInsttNm: "한국도로공사서비스(주)", asignBdgtAmt: "4512000000", rgstDt: "2026-08-12 16:03:27", opninRgstClseDt: "2026-08-18 23:59:00", specDocFileUrl1: "https://www.g2b.go.kr/download/1", specDocFileUrl2: "https://www.g2b.go.kr/download/2" }, "spec");
+    expect(mapped.agency).toBe("한국도로공사서비스(주)");
+    expect(mapped.itemName).toBe("디지털 복합기 임차 용역");
+    expect(mapped.baseAmount).toBe("4512000000.00");
+    expect(mapped.attachmentsJson).toContain("사전규격 첨부자료 1");
   });
 });
 

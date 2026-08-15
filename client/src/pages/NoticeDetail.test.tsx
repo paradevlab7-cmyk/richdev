@@ -22,6 +22,6 @@ describe("AttachmentLinks", () => {
     const html = renderToStaticMarkup(<AttachmentLinks attachments={[{ name: "specDocFileUrl1", url }]} />);
 
     expect(html).toContain(`href=\"${url.replace(/&/g, "&amp;")}\"`);
-    expect(html).toContain("specDocFileUrl1");
+    expect(html).toContain("사전규격 첨부자료 1");
   });
 });
