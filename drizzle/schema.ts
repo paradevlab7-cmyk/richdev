@@ -30,6 +30,8 @@ export const userSettings = mysqlTable("user_settings", {
   mailgunDomain: varchar("mailgunDomain", { length: 320 }),
   emailEnabled: boolean("emailEnabled").default(true).notNull(),
   telegramEnabled: boolean("telegramEnabled").default(true).notNull(),
+  lastCollectionDays: int("lastCollectionDays").default(90).notNull(),
+  serviceCollectionDefaultsJson: text("serviceCollectionDefaultsJson"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

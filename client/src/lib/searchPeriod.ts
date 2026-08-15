@@ -1,4 +1,6 @@
-export const DEFAULT_COLLECTION_DAYS = 90;
+import { DEFAULT_COLLECTION_DAYS } from "@shared/collectionPreferences";
+
+export { DEFAULT_COLLECTION_DAYS };
 
 export function toDateInput(daysAgo = 0, now = new Date()) {
   const date = new Date(now);

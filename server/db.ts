@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { count } from "drizzle-orm";
 import { ENV } from "./_core/env";
 import { InsertUser, users, userSettings, monitoringKeywords, favoriteFilters, notices, savedNotices, collectionRuns } from "../drizzle/schema";
+import { COLLECTION_SOURCE_TYPES, type CollectionSourceType, estimateCollectionWork, normalizeCollectionDays, normalizeServiceCollectionDefaults } from "../shared/collectionPreferences";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
@@ -60,6 +61,26 @@ export async function listKeywords(userId: number) { const db = await getDb(); i
 export async function listFavoriteFilters(userId: number) { const db = await getDb(); if (!db) return []; return db.select().from(favoriteFilters).where(eq(favoriteFilters.userId, userId)).orderBy(desc(favoriteFilters.updatedAt)); }
 export async function listSaved(userId: number) { const db = await getDb(); if (!db) return []; return db.select({ saved: savedNotices, notice: notices }).from(savedNotices).innerJoin(notices, eq(savedNotices.noticeId, notices.id)).where(eq(savedNotices.userId, userId)).orderBy(desc(savedNotices.updatedAt)); }
 export async function getSettings(userId: number) { const db = await getDb(); if (!db) return undefined; return (await db.select().from(userSettings).where(eq(userSettings.userId, userId)).limit(1))[0]; }
+export async function getCollectionPreferences(userId: number) {
+  const settings = await getSettings(userId);
+  let defaults: unknown;
+  try { defaults = settings?.serviceCollectionDefaultsJson ? JSON.parse(settings.serviceCollectionDefaultsJson) : undefined; } catch { defaults = undefined; }
+  return { lastCollectionDays: normalizeCollectionDays(settings?.lastCollectionDays), serviceDefaults: normalizeServiceCollectionDefaults(defaults) };
+}
+export async function saveCollectionPreferences(userId: number, input: { lastCollectionDays: number; serviceDefaults: Record<CollectionSourceType, number> }) {
+  const db = await getDb(); if (!db) throw new Error("DB unavailable");
+  const values = { lastCollectionDays: normalizeCollectionDays(input.lastCollectionDays), serviceCollectionDefaultsJson: JSON.stringify(normalizeServiceCollectionDefaults(input.serviceDefaults)) };
+  const current = await getSettings(userId);
+  if (current) await db.update(userSettings).set(values).where(eq(userSettings.userId, userId));
+  else await db.insert(userSettings).values({ userId, ...values });
+  return getCollectionPreferences(userId);
+}
+export async function getCollectionWorkEstimate(days: number, sourceTypes: CollectionSourceType[]) {
+  const db = await getDb();
+  if (!db) return estimateCollectionWork(days, sourceTypes, []);
+  const rows = await db.select().from(collectionRuns).where(sql`${collectionRuns.sourceType} IN (${sql.join(sourceTypes.map(sourceType => sql`${sourceType}`), sql`, `)})`).orderBy(desc(collectionRuns.startedAt)).limit(150);
+  return estimateCollectionWork(days, sourceTypes, rows.map(row => ({ sourceType: row.sourceType, status: row.status, fetchedCount: row.fetchedCount, totalAvailable: row.totalAvailable, queryStartAt: row.queryStartAt, queryEndAt: row.queryEndAt, startedAt: row.startedAt, finishedAt: row.finishedAt })));
+}
 export async function getCollectionRuns() { const db = await getDb(); if (!db) return []; return db.select().from(collectionRuns).orderBy(desc(collectionRuns.startedAt)).limit(10); }
 export async function getCollectionDailyStats(days = 7) {
   const db = await getDb();

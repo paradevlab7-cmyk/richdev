@@ -4,15 +4,19 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { and, desc, eq } from "drizzle-orm";
-import { estimateBid, getCollectionDailyStats, getCompanyHistory, getDb, getCollectionRuns, getNotice, getNoticeStats, getSettings, listFavoriteFilters, listKeywords, listNotices, listSaved } from "./db";
+import { estimateBid, getCollectionDailyStats, getCollectionPreferences, getCollectionRuns, getCollectionWorkEstimate, getCompanyHistory, getDb, getNotice, getNoticeStats, getSettings, listFavoriteFilters, listKeywords, listNotices, listSaved, saveCollectionPreferences } from "./db";
 import { collectForUser } from "./g2b";
 import { decryptSecret, encryptSecret } from "./secure";
 import { parseEndOfDay, parseStartOfDay } from "./dateRange";
 import { favoriteFilters, monitoringKeywords, notices, savedNotices, userSettings } from "../drizzle/schema";
+import { COLLECTION_SOURCE_TYPES, DEFAULT_COLLECTION_DAYS, normalizeCollectionDays, normalizeServiceCollectionDefaults } from "../shared/collectionPreferences";
 
-const sourceTypes = ["bid", "spec", "award", "contract", "standard"] as const;
+const sourceTypes = COLLECTION_SOURCE_TYPES;
 export const collectionDailyStatsInput = z.object({ days: z.number().int().min(1).max(90).default(7) });
-export const collectionRunInput = z.object({ days: z.number().int().min(1).max(180).default(90) });
+export const collectionServiceDefaultsInput = z.object({ bid: z.number().int().min(1).max(180), spec: z.number().int().min(1).max(180), award: z.number().int().min(1).max(180), contract: z.number().int().min(1).max(180), standard: z.number().int().min(1).max(180) });
+export const collectionPreferencesInput = z.object({ lastCollectionDays: z.number().int().min(1).max(180).default(DEFAULT_COLLECTION_DAYS), serviceDefaults: collectionServiceDefaultsInput });
+export const collectionRunInput = z.object({ days: z.number().int().min(1).max(180).default(DEFAULT_COLLECTION_DAYS), serviceDefaults: collectionServiceDefaultsInput.optional() });
+export const collectionEstimateInput = z.object({ days: z.number().int().min(1).max(180).default(DEFAULT_COLLECTION_DAYS), sourceTypes: z.array(z.enum(sourceTypes)).min(1).max(sourceTypes.length).default([...sourceTypes]) });
 export const companyHistoryInput = z.object({ companyName: z.string().trim().min(1).max(200), limit: z.number().int().min(1).max(100).default(50) });
 export const appRouter = router({
   system: systemRouter,
@@ -42,7 +46,23 @@ export const appRouter = router({
     get: protectedProcedure.query(async ({ ctx }) => { const s = await getSettings(ctx.user.id); if (!s) return null; return { ...s, dataServiceKey: decryptSecret(s.dataServiceKey), telegramBotToken: decryptSecret(s.telegramBotToken), smtpPassword: decryptSecret(s.smtpPassword), emailApiKey: decryptSecret(s.emailApiKey) }; }),
     save: protectedProcedure.input(z.object({ dataServiceKey: z.string().optional(), telegramBotToken: z.string().optional(), telegramChatId: z.string().optional(), notificationEmail: z.string().email().optional().or(z.literal("")), emailEnabled: z.boolean(), telegramEnabled: z.boolean(), emailProvider: z.enum(["owner", "smtp", "resend", "sendgrid", "mailgun"]), fallbackEmailProvider: z.enum(["none", "owner", "smtp", "resend", "sendgrid", "mailgun"]), emailFrom: z.string().email().optional().or(z.literal("")), smtpHost: z.string().optional(), smtpPort: z.number().int().min(1).max(65535).optional(), smtpUsername: z.string().optional(), smtpPassword: z.string().optional(), emailApiKey: z.string().optional(), mailgunDomain: z.string().optional() })).mutation(async ({ ctx, input }) => { const db = await getDb(); if (!db) throw new Error("DB unavailable"); const current = await getSettings(ctx.user.id); const stored = (value: string | undefined, existing: string | null | undefined) => value && !value.includes("••") ? encryptSecret(value) : existing; const values = { userId: ctx.user.id, dataServiceKey: stored(input.dataServiceKey, current?.dataServiceKey), telegramBotToken: stored(input.telegramBotToken, current?.telegramBotToken), telegramChatId: input.telegramChatId, notificationEmail: input.notificationEmail || null, emailEnabled: input.emailEnabled, telegramEnabled: input.telegramEnabled, emailProvider: input.emailProvider, fallbackEmailProvider: input.fallbackEmailProvider, emailFrom: input.emailFrom || null, smtpHost: input.smtpHost || null, smtpPort: input.smtpPort || null, smtpUsername: input.smtpUsername || null, smtpPassword: stored(input.smtpPassword, current?.smtpPassword), emailApiKey: stored(input.emailApiKey, current?.emailApiKey), mailgunDomain: input.mailgunDomain || null }; if (current) await db.update(userSettings).set(values).where(eq(userSettings.userId, ctx.user.id)); else await db.insert(userSettings).values(values); return { success: true }; }),
   }),
-  collection: router({ runs: protectedProcedure.query(() => getCollectionRuns()), dailyStats: protectedProcedure.input(collectionDailyStatsInput.optional()).query(({ input }) => getCollectionDailyStats(input?.days ?? 7)), runNow: protectedProcedure.input(collectionRunInput).mutation(async ({ ctx, input }) => { const result = await collectForUser(ctx.user.id, undefined, 5, input.days); if (result.failures.length === 5) throw new Error(result.failures.map(item => `${item.sourceType}: ${item.message}`).join("\n")); return result; }) }),
+  collection: router({
+    runs: protectedProcedure.query(() => getCollectionRuns()),
+    dailyStats: protectedProcedure.input(collectionDailyStatsInput.optional()).query(({ input }) => getCollectionDailyStats(input?.days ?? 7)),
+    preferences: router({
+      get: protectedProcedure.query(({ ctx }) => getCollectionPreferences(ctx.user.id)),
+      save: protectedProcedure.input(collectionPreferencesInput).mutation(({ ctx, input }) => saveCollectionPreferences(ctx.user.id, { lastCollectionDays: input.lastCollectionDays, serviceDefaults: normalizeServiceCollectionDefaults(input.serviceDefaults) })),
+    }),
+    estimate: protectedProcedure.input(collectionEstimateInput).query(({ input }) => getCollectionWorkEstimate(normalizeCollectionDays(input.days), input.sourceTypes)),
+    runNow: protectedProcedure.input(collectionRunInput).mutation(async ({ ctx, input }) => {
+      const preferences = await getCollectionPreferences(ctx.user.id);
+      const serviceDefaults = input.serviceDefaults ? normalizeServiceCollectionDefaults(input.serviceDefaults) : preferences.serviceDefaults;
+      await saveCollectionPreferences(ctx.user.id, { lastCollectionDays: input.days, serviceDefaults });
+      const result = await collectForUser(ctx.user.id, undefined, 5, input.serviceDefaults ? serviceDefaults : input.days);
+      if (result.failures.length === 5) throw new Error(result.failures.map(item => `${item.sourceType}: ${item.message}`).join("\n"));
+      return result;
+    }),
+  }),
   analysis: router({ estimate: protectedProcedure.input(z.object({ agency: z.string().optional(), itemName: z.string().optional(), baseAmount: z.number().positive() })).query(({ input }) => estimateBid(input)) }),
 });
 export type AppRouter = typeof appRouter;

@@ -2,6 +2,7 @@ import { getDb, getSettings, listKeywords } from "./db";
 import { collectionRuns, notices } from "../drizzle/schema";
 import { and, count, desc, eq, gt, gte, lte, or, sql } from "drizzle-orm";
 import { decryptSecret } from "./secure";
+import { getCollectionWindowDays, type CollectionSourceType } from "../shared/collectionPreferences";
 
 export const G2B_ENDPOINTS = {
   bid: "https://apis.data.go.kr/1230000/ad/BidPublicInfoService",
@@ -12,8 +13,7 @@ export const G2B_ENDPOINTS = {
 } as const;
 
 export function resolveCollectionWindowDays(type: keyof typeof G2B_ENDPOINTS, requestedDays: number) {
-  const normalizedDays = Math.max(1, Math.min(requestedDays, 180));
-  return type === "award" || type === "standard" ? Math.min(normalizedDays, 30) : normalizedDays;
+  return getCollectionWindowDays(type, requestedDays);
 }
 export function getCollectionDateParams(type: keyof typeof G2B_ENDPOINTS, start: Date, end: Date) {
   return type === "standard"
@@ -185,7 +185,7 @@ export async function collectSpecBackfill(userId: number) {
   return collectTypeBatch(userId, activeRun.sourceType as keyof typeof G2B_ENDPOINTS, { pageLimit: 2, requestedDays: 15, activeRun, isBackground: true });
 }
 
-export async function collectForUser(userId: number, sourceType?: keyof typeof G2B_ENDPOINTS, pageLimit = 5, requestedDays = 5) {
+export async function collectForUser(userId: number, sourceType?: keyof typeof G2B_ENDPOINTS, pageLimit = 5, requestedDays: number | Partial<Record<CollectionSourceType, number>> = 5) {
   const activeStandardRun = await getActiveCollectionRun("standard");
   const activeSpecRun = await getActiveCollectionRun("spec");
   const types: (keyof typeof G2B_ENDPOINTS)[] = sourceType ? [sourceType] : activeStandardRun ? ["standard"] : activeSpecRun ? ["spec"] : Object.keys(G2B_ENDPOINTS) as (keyof typeof G2B_ENDPOINTS)[];
@@ -194,7 +194,8 @@ export async function collectForUser(userId: number, sourceType?: keyof typeof G
   const failures: { sourceType: string; message: string }[] = [];
   for (const type of types) {
     const activeRun = type === "standard" ? activeStandardRun ?? await getActiveCollectionRun("standard") : type === "spec" ? activeSpecRun ?? await getActiveCollectionRun("spec") : undefined;
-    const result = await collectTypeBatch(userId, type, { pageLimit, requestedDays, activeRun });
+    const daysForType = typeof requestedDays === "number" ? requestedDays : requestedDays[type] ?? 90;
+    const result = await collectTypeBatch(userId, type, { pageLimit, requestedDays: daysForType, activeRun });
     total += result.fetched;
     matched += result.matched;
     failures.push(...result.failures);
