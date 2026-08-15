@@ -10,7 +10,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { sdk } from "./sdk";
 import { ENV } from "./env";
-import { collectForUser, collectSpecBackfill, sendTelegram } from "../g2b";
+import { collectForUser, collectSpecBackfill, formatCollectionFailures, sendTelegram } from "../g2b";
 import { getConfiguredCollectionOwner, getUserByOpenId } from "../db";
 import { buildDailyDigest, sendDigestEmail } from "../email";
 
@@ -76,6 +76,8 @@ async function startServer() {
       const owner = await getUserByOpenId(ENV.ownerOpenId) ?? await getConfiguredCollectionOwner();
       if (!owner) return res.json({ ok: true, skipped: "owner-not-found" });
       const result = await collectSpecBackfill(owner.id);
+      const failures = "failures" in result ? result.failures : [];
+      if (failures.length) throw new Error(formatCollectionFailures(failures));
       return res.json({ ok: true, result });
     } catch (error) {
       return res.status(500).json({ error: String(error), timestamp: new Date().toISOString() });

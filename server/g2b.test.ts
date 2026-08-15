@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { G2B_ENDPOINTS, getCollectionDateParams, getJson, mapG2BNoticeFields, resolveCollectionWindowDays } from "./g2b";
+import { formatCollectionFailures, G2B_ENDPOINTS, getCollectionDateParams, getJson, mapG2BNoticeFields, resolveCollectionWindowDays } from "./g2b";
 
 describe("G2B endpoint catalog", () => {
   it("keeps the five user-specified public API base URLs unchanged", () => {
@@ -72,5 +72,11 @@ describe("G2B API retry", () => {
 
     await expect(getJson(new URL("https://example.test/spec"), { fetchImpl: mockFetch as unknown as typeof fetch, retryDelayMs: 0 })).rejects.toThrow("network unavailable");
     expect(mockFetch).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("scheduled collection failures", () => {
+  it("keeps the source type and error text so the schedule handler can return a retryable failure", () => {
+    expect(formatCollectionFailures([{ sourceType: "standard", message: "fetch failed" }])).toBe("standard: fetch failed");
   });
 });

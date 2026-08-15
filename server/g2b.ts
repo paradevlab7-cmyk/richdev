@@ -102,6 +102,7 @@ export async function getJson(url: URL, options: { fetchImpl?: typeof fetch; ret
 
 type ActiveCollectionRun = typeof collectionRuns.$inferSelect;
 type BatchResult = { fetched: number; matched: number; failures: { sourceType: string; message: string }[]; runId: number; isComplete: boolean };
+export function formatCollectionFailures(failures: { sourceType: string; message: string }[]) { return failures.map(item => `${item.sourceType}: ${item.message}`).join("\n"); }
 
 async function countStoredNotices(type: keyof typeof G2B_ENDPOINTS, start: Date, end: Date) {
   const db = await getDb();
