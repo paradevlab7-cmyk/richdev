@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { G2B_ENDPOINTS, getJson, mapG2BNoticeFields, resolveCollectionWindowDays } from "./g2b";
+import { G2B_ENDPOINTS, getCollectionDateParams, getJson, mapG2BNoticeFields, resolveCollectionWindowDays } from "./g2b";
 
 describe("G2B endpoint catalog", () => {
   it("keeps the five user-specified public API base URLs unchanged", () => {
@@ -20,6 +20,13 @@ describe("collection duration", () => {
     expect(resolveCollectionWindowDays("award", 15)).toBe(15);
     expect(resolveCollectionWindowDays("award", 30)).toBe(30);
     expect(resolveCollectionWindowDays("award", 180)).toBe(30);
+    expect(resolveCollectionWindowDays("standard", 180)).toBe(30);
+  });
+
+  it("uses the 개방표준 bid notice date fields instead of inqry fields", () => {
+    const start = new Date("2026-08-01T00:00:00"); const end = new Date("2026-08-15T23:59:00");
+    expect(getCollectionDateParams("standard", start, end)).toEqual({ bidNtceBgnDt: "202608010000", bidNtceEndDt: "202608152359" });
+    expect(getCollectionDateParams("bid", start, end)).toEqual({ inqryBgnDt: "202608010000", inqryEndDt: "202608152359" });
   });
 });
 

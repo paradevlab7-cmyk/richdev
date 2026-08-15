@@ -13,7 +13,12 @@ export const G2B_ENDPOINTS = {
 
 export function resolveCollectionWindowDays(type: keyof typeof G2B_ENDPOINTS, requestedDays: number) {
   const normalizedDays = Math.max(1, Math.min(requestedDays, 180));
-  return type === "award" ? Math.min(normalizedDays, 30) : normalizedDays;
+  return type === "award" || type === "standard" ? Math.min(normalizedDays, 30) : normalizedDays;
+}
+export function getCollectionDateParams(type: keyof typeof G2B_ENDPOINTS, start: Date, end: Date) {
+  return type === "standard"
+    ? { bidNtceBgnDt: formatApiDate(start), bidNtceEndDt: formatApiDate(end) }
+    : { inqryBgnDt: formatApiDate(start), inqryEndDt: formatApiDate(end) };
 }
 
 const OPERATIONS = {
@@ -105,10 +110,10 @@ async function countStoredNotices(type: keyof typeof G2B_ENDPOINTS, start: Date,
   return Number(rows[0]?.total ?? 0);
 }
 
-async function getActiveSpecRun() {
+async function getActiveCollectionRun(type: keyof typeof G2B_ENDPOINTS) {
   const db = await getDb();
   if (!db) return undefined;
-  return (await db.select().from(collectionRuns).where(and(eq(collectionRuns.sourceType, "spec"), or(eq(collectionRuns.status, "running"), eq(collectionRuns.status, "failed")), gt(collectionRuns.totalAvailable, 0), sql`${collectionRuns.totalAvailable} > ${collectionRuns.fetchedCount}`)).orderBy(desc(collectionRuns.startedAt)).limit(1))[0];
+  return (await db.select().from(collectionRuns).where(and(eq(collectionRuns.sourceType, type), or(eq(collectionRuns.status, "running"), eq(collectionRuns.status, "failed")), gt(collectionRuns.totalAvailable, 0), sql`${collectionRuns.totalAvailable} > ${collectionRuns.fetchedCount}`)).orderBy(desc(collectionRuns.startedAt)).limit(1))[0];
 }
 
 async function collectTypeBatch(userId: number, type: keyof typeof G2B_ENDPOINTS, options: { pageLimit: number; requestedDays: number; activeRun?: ActiveCollectionRun; isBackground?: boolean }): Promise<BatchResult> {
@@ -120,6 +125,7 @@ async function collectTypeBatch(userId: number, type: keyof typeof G2B_ENDPOINTS
   const keywords = await listKeywords(userId);
   const end = options.activeRun?.queryEndAt ?? new Date();
   const start = options.activeRun?.queryStartAt ?? new Date(end.getTime() - resolveCollectionWindowDays(type, options.requestedDays) * 86400000);
+  if (!options.activeRun) start.setHours(0, 0, 0, 0);
   const startPage = options.activeRun ? options.activeRun.currentPage + 1 : 1;
   const runId = options.activeRun?.id ?? insertId(await db.insert(collectionRuns).values({ sourceType: type, status: "running", startPage, currentPage: startPage - 1, queryStartAt: start, queryEndAt: end, isBackground: Boolean(options.isBackground) }));
   let fetchedCount = options.activeRun?.fetchedCount ?? 0;
@@ -140,8 +146,7 @@ async function collectTypeBatch(userId: number, type: keyof typeof G2B_ENDPOINTS
       url.searchParams.set("numOfRows", String(pageSize));
       url.searchParams.set("type", "json");
       if (type === "award" || type === "spec") url.searchParams.set("inqryDiv", "1");
-      url.searchParams.set("inqryBgnDt", formatApiDate(start));
-      url.searchParams.set("inqryEndDt", formatApiDate(end));
+      Object.entries(getCollectionDateParams(type, start, end)).forEach(([key, value]) => url.searchParams.set(key, value));
       const payload = await getJson(url);
       const items = toItems(payload);
       totalAvailable = totalCount(payload) || totalAvailable;
@@ -174,19 +179,20 @@ async function collectTypeBatch(userId: number, type: keyof typeof G2B_ENDPOINTS
 }
 
 export async function collectSpecBackfill(userId: number) {
-  const activeRun = await getActiveSpecRun();
+  const activeRun = await getActiveCollectionRun("standard") ?? await getActiveCollectionRun("spec");
   if (!activeRun) return { skipped: "no-active-spec-backfill" as const, fetched: 0, matched: 0, isComplete: true };
-  return collectTypeBatch(userId, "spec", { pageLimit: 2, requestedDays: 15, activeRun, isBackground: true });
+  return collectTypeBatch(userId, activeRun.sourceType as keyof typeof G2B_ENDPOINTS, { pageLimit: 2, requestedDays: 15, activeRun, isBackground: true });
 }
 
 export async function collectForUser(userId: number, sourceType?: keyof typeof G2B_ENDPOINTS, pageLimit = 5, requestedDays = 5) {
-  const activeSpecRun = await getActiveSpecRun();
-  const types: (keyof typeof G2B_ENDPOINTS)[] = sourceType ? [sourceType] : activeSpecRun ? ["spec"] : Object.keys(G2B_ENDPOINTS) as (keyof typeof G2B_ENDPOINTS)[];
+  const activeStandardRun = await getActiveCollectionRun("standard");
+  const activeSpecRun = await getActiveCollectionRun("spec");
+  const types: (keyof typeof G2B_ENDPOINTS)[] = sourceType ? [sourceType] : activeStandardRun ? ["standard"] : activeSpecRun ? ["spec"] : Object.keys(G2B_ENDPOINTS) as (keyof typeof G2B_ENDPOINTS)[];
   let total = 0;
   let matched = 0;
   const failures: { sourceType: string; message: string }[] = [];
   for (const type of types) {
-    const activeRun = type === "spec" ? activeSpecRun ?? await getActiveSpecRun() : undefined;
+    const activeRun = type === "standard" ? activeStandardRun ?? await getActiveCollectionRun("standard") : type === "spec" ? activeSpecRun ?? await getActiveCollectionRun("spec") : undefined;
     const result = await collectTypeBatch(userId, type, { pageLimit, requestedDays, activeRun });
     total += result.fetched;
     matched += result.matched;
@@ -195,4 +201,4 @@ export async function collectForUser(userId: number, sourceType?: keyof typeof G
   return { total, matched, failures };
 }
 export async function sendTelegram(userId: number, message: string) { const settings = await getSettings(userId); const token = decryptSecret(settings?.telegramBotToken); if (!settings?.telegramEnabled || !token || !settings.telegramChatId) return false; const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: settings.telegramChatId, text: message, disable_web_page_preview: true }) }); return response.ok; }
-function formatApiDate(date: Date) { const p = (n: number) => String(n).padStart(2, "0"); return `${date.getFullYear()}${p(date.getMonth() + 1)}${p(date.getDate())}0000`; }
+function formatApiDate(date: Date) { const p = (n: number) => String(n).padStart(2, "0"); return `${date.getFullYear()}${p(date.getMonth() + 1)}${p(date.getDate())}${p(date.getHours())}${p(date.getMinutes())}`; }
