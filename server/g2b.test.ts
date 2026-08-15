@@ -46,6 +46,12 @@ describe("G2B field aliases", () => {
     expect(mapped.baseAmount).toBe("4512000000.00");
     expect(mapped.attachmentsJson).toContain("사전규격 첨부자료 1");
   });
+
+  it("keeps public-standard bid notices under the standard service instead of reclassifying them as bid API rows", () => {
+    const mapped = mapG2BNoticeFields({ bidNtceNo: "R26BK01679541", bidNtceNm: "PATIENT MONITOR" }, "standard");
+    expect(mapped.sourceType).toBe("standard");
+    expect(mapped.noticeId).toBe("standard:R26BK01679541");
+  });
 });
 
 describe("G2B API retry", () => {

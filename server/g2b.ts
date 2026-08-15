@@ -55,7 +55,7 @@ export function extractAttachments(item: Record<string, unknown>) {
 }
 
 export function mapG2BNoticeFields(item: Record<string, unknown>, fallback: keyof typeof G2B_ENDPOINTS) {
-  const sourceType = inferSourceType(item, fallback);
+  const sourceType = fallback;
   const sourceId = String(first(item.bidNtceNo, item.ntceNo, item.cntrctNo, item.untyCntrctNo, item.prcrmntReqNo, item.rgstNo, item.bfSpecRgstNo, item.refNo) ?? `${item.bidNtceNm ?? item.cntrctNm ?? item.prdctClsfcNoNm ?? JSON.stringify(item).slice(0, 40)}`);
   const title = String(first(item.bidNtceNm, item.ntceNm, item.cntrctNm, item.prdctNm, item.prdctClsfcNoNm, item.bfSpecDtil, item.bsnsNm, "제목 미상"));
   const agency = sourceType === "bid"
