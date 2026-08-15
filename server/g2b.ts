@@ -165,7 +165,7 @@ async function collectTypeBatch(userId: number, type: keyof typeof G2B_ENDPOINTS
 export async function collectSpecBackfill(userId: number) {
   const activeRun = await getActiveSpecRun();
   if (!activeRun) return { skipped: "no-active-spec-backfill" as const, fetched: 0, matched: 0, isComplete: true };
-  return collectTypeBatch(userId, "spec", { pageLimit: 5, requestedDays: 15, activeRun, isBackground: true });
+  return collectTypeBatch(userId, "spec", { pageLimit: 2, requestedDays: 15, activeRun, isBackground: true });
 }
 
 export async function collectForUser(userId: number, sourceType?: keyof typeof G2B_ENDPOINTS, pageLimit = 5, requestedDays = 5) {
