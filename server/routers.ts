@@ -4,7 +4,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { and, desc, eq } from "drizzle-orm";
-import { estimateBid, getCollectionDailyStats, getCollectionPreferences, getCollectionRuns, getCollectionWorkEstimate, getCompanyHistory, getDb, getNotice, getNoticeStats, getSettings, listBidAnalysisHistory, listFavoriteFilters, listKeywords, listNotices, listSaved, saveBidAnalysisHistory, saveCollectionPreferences } from "./db";
+import { estimateBid, getBidRateTrend, getCollectionDailyStats, getCollectionPreferences, getCollectionRuns, getCollectionWorkEstimate, getCompanyHistory, getDb, getNotice, getNoticeStats, getSettings, listBidAnalysisHistory, listFavoriteFilters, listKeywords, listNotices, listSaved, saveBidAnalysisHistory, saveCollectionPreferences } from "./db";
 import { collectForUser } from "./g2b";
 import { decryptSecret, encryptSecret } from "./secure";
 import { parseEndOfDay, parseStartOfDay } from "./dateRange";
@@ -18,6 +18,7 @@ export const collectionPreferencesInput = z.object({ lastCollectionDays: z.numbe
 export const collectionRunInput = z.object({ days: z.number().int().min(1).max(180).default(DEFAULT_COLLECTION_DAYS), serviceDefaults: collectionServiceDefaultsInput.optional() });
 export const collectionEstimateInput = z.object({ days: z.number().int().min(1).max(180).default(DEFAULT_COLLECTION_DAYS), sourceTypes: z.array(z.enum(sourceTypes)).min(1).max(sourceTypes.length).default([...sourceTypes]) });
 export const bidAnalysisInput = z.object({ agency: z.string().trim().max(255).optional(), itemName: z.string().trim().max(500).optional(), baseAmount: z.number().positive().max(999999999999999) });
+export const bidAnalysisTrendInput = bidAnalysisInput.omit({ baseAmount: true });
 export const companyHistoryInput = z.object({ companyName: z.string().trim().min(1).max(200), limit: z.number().int().min(1).max(100).default(50) });
 export const appRouter = router({
   system: systemRouter,
@@ -66,6 +67,7 @@ export const appRouter = router({
   }),
   analysis: router({
     estimate: protectedProcedure.input(bidAnalysisInput).query(({ input }) => estimateBid(input)),
+    trend: protectedProcedure.input(bidAnalysisTrendInput).query(({ input }) => getBidRateTrend(input)),
     history: protectedProcedure.query(({ ctx }) => listBidAnalysisHistory(ctx.user.id)),
     save: protectedProcedure.input(bidAnalysisInput).mutation(async ({ ctx, input }) => { const result = await estimateBid(input); if (!result.sampleSize || typeof result.medianRate !== "number" || typeof result.lowRate !== "number" || typeof result.highRate !== "number" || typeof result.expectedBid !== "number" || typeof result.minBid !== "number" || typeof result.maxBid !== "number") throw new Error("저장할 낙찰 표본이 없습니다."); return saveBidAnalysisHistory(ctx.user.id, input, { sampleSize: result.sampleSize, medianRate: result.medianRate, lowRate: result.lowRate, highRate: result.highRate, expectedBid: result.expectedBid, minBid: result.minBid, maxBid: result.maxBid }); }),
   }),

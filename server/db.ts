@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { count } from "drizzle-orm";
 import { ENV } from "./_core/env";
 import { InsertUser, users, userSettings, monitoringKeywords, favoriteFilters, notices, savedNotices, collectionRuns, bidAnalysisHistory } from "../drizzle/schema";
+import { buildBidRateTrend } from "./bidRateTrend";
 import { COLLECTION_SOURCE_TYPES, type CollectionSourceType, estimateCollectionWork, normalizeCollectionDays, normalizeServiceCollectionDefaults } from "../shared/collectionPreferences";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -108,6 +109,11 @@ export async function estimateBid(input: { agency?: string; itemName?: string; b
   });
   const samples = filtered.map(row => ({ id: row.id, title: row.title, agency: row.agency, noticeDate: row.noticeDate, awardRate: Number(row.awardRate), awardAmount: row.awardAmount ? Number(row.awardAmount) : null })).sort((a, b) => (b.noticeDate?.getTime() ?? 0) - (a.noticeDate?.getTime() ?? 0)).slice(0, 8);
   return { sampleSize: rates.length, medianRate: median, lowRate: low, highRate: high, minRate: minimum, maxRate: maximum, expectedBid: Math.round(input.baseAmount * median / 100), minBid: Math.round(input.baseAmount * low / 100), maxBid: Math.round(input.baseAmount * high / 100), distribution, samples };
+}
+export async function getBidRateTrend(input: { agency?: string; itemName?: string }) {
+  const rows = await listNotices({ q: input.itemName || input.agency, sourceType: "award", limit: 200 });
+  const filtered = rows.filter(row => (!input.agency || row.agency?.includes(input.agency)) && (!input.itemName || `${row.title} ${row.itemName ?? ""}`.includes(input.itemName)) && row.awardRate && row.noticeDate);
+  return buildBidRateTrend(filtered);
 }
 export async function listBidAnalysisHistory(userId: number) { const db = await getDb(); if (!db) return []; return db.select().from(bidAnalysisHistory).where(eq(bidAnalysisHistory.userId, userId)).orderBy(desc(bidAnalysisHistory.createdAt)).limit(12); }
 export async function saveBidAnalysisHistory(userId: number, input: { agency?: string; itemName?: string; baseAmount: number }, result: { sampleSize: number; medianRate: number; lowRate: number; highRate: number; expectedBid: number; minBid: number; maxBid: number }) {

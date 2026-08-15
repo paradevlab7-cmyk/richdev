@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ estimateBid: vi.fn(), saveBidAnalysisHistory: vi.fn(), listBidAnalysisHistory: vi.fn() }));
+const mocks = vi.hoisted(() => ({ estimateBid: vi.fn(), getBidRateTrend: vi.fn(), saveBidAnalysisHistory: vi.fn(), listBidAnalysisHistory: vi.fn() }));
 
 vi.mock("./db", () => ({
-  estimateBid: mocks.estimateBid,
+  estimateBid: mocks.estimateBid, getBidRateTrend: mocks.getBidRateTrend,
   saveBidAnalysisHistory: mocks.saveBidAnalysisHistory,
   listBidAnalysisHistory: mocks.listBidAnalysisHistory,
   getCollectionDailyStats: vi.fn(), getCollectionPreferences: vi.fn(), getCollectionRuns: vi.fn(), getCollectionWorkEstimate: vi.fn(), getCompanyHistory: vi.fn(), getDb: vi.fn(), getNotice: vi.fn(), getNoticeStats: vi.fn(), getSettings: vi.fn(), listFavoriteFilters: vi.fn(), listKeywords: vi.fn(), listNotices: vi.fn(), listSaved: vi.fn(), saveCollectionPreferences: vi.fn(),
@@ -32,5 +32,13 @@ describe("analysis router", () => {
     expect(mocks.estimateBid).toHaveBeenCalledWith(input);
     expect(mocks.saveBidAnalysisHistory).toHaveBeenCalledWith(17, input, expect.objectContaining({ sampleSize: 8, expectedBid: 90000000, minBid: 88000000, maxBid: 92000000 }));
     expect(result).toEqual([{ id: 5 }]);
+  });
+
+  it("returns agency and item-specific rate trend points", async () => {
+    const input = { agency: "조달청", itemName: "전산장비" };
+    mocks.getBidRateTrend.mockResolvedValueOnce([{ date: "2026-08-01", averageRate: 89.2, count: 3 }]);
+    const result = await appRouter.createCaller(context).analysis.trend(input);
+    expect(mocks.getBidRateTrend).toHaveBeenCalledWith(input);
+    expect(result).toEqual([{ date: "2026-08-01", averageRate: 89.2, count: 3 }]);
   });
 });
