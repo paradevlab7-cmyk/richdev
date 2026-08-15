@@ -1,6 +1,6 @@
 import { getDb, getSettings, listKeywords } from "./db";
 import { collectionRuns, notices } from "../drizzle/schema";
-import { and, count, desc, eq, gt, gte, lte } from "drizzle-orm";
+import { and, count, desc, eq, gt, gte, lte, or } from "drizzle-orm";
 import { decryptSecret } from "./secure";
 
 export const G2B_ENDPOINTS = {
@@ -88,7 +88,7 @@ async function countStoredNotices(type: keyof typeof G2B_ENDPOINTS, start: Date,
 async function getActiveSpecRun() {
   const db = await getDb();
   if (!db) return undefined;
-  return (await db.select().from(collectionRuns).where(and(eq(collectionRuns.sourceType, "spec"), eq(collectionRuns.status, "running"), gt(collectionRuns.totalAvailable, 0), gt(collectionRuns.totalAvailable, collectionRuns.fetchedCount))).orderBy(desc(collectionRuns.startedAt)).limit(1))[0];
+  return (await db.select().from(collectionRuns).where(and(eq(collectionRuns.sourceType, "spec"), or(eq(collectionRuns.status, "running"), eq(collectionRuns.status, "failed")), gt(collectionRuns.totalAvailable, 0), gt(collectionRuns.totalAvailable, collectionRuns.fetchedCount))).orderBy(desc(collectionRuns.startedAt)).limit(1))[0];
 }
 
 async function collectTypeBatch(userId: number, type: keyof typeof G2B_ENDPOINTS, options: { pageLimit: number; requestedDays: number; activeRun?: ActiveCollectionRun; isBackground?: boolean }): Promise<BatchResult> {
