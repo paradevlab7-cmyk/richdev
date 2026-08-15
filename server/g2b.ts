@@ -31,7 +31,7 @@ function inferSourceType(item: Record<string, unknown>, fallback: keyof typeof G
   if (item.bidNtceNo || item.bidNtceNm) return "bid";
   return fallback;
 }
-function extractAttachments(item: Record<string, unknown>) {
+export function extractAttachments(item: Record<string, unknown>) {
   return Object.entries(item).flatMap(([key, value]) => {
     if (typeof value !== "string" || !/^https?:\/\//i.test(value)) return [];
     if (!/(atch|attach|file|download)/i.test(key)) return [];
