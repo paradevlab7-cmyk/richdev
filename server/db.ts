@@ -110,9 +110,10 @@ export async function estimateBid(input: { agency?: string; itemName?: string; b
   const samples = filtered.map(row => ({ id: row.id, title: row.title, agency: row.agency, noticeDate: row.noticeDate, awardRate: Number(row.awardRate), awardAmount: row.awardAmount ? Number(row.awardAmount) : null })).sort((a, b) => (b.noticeDate?.getTime() ?? 0) - (a.noticeDate?.getTime() ?? 0)).slice(0, 8);
   return { sampleSize: rates.length, medianRate: median, lowRate: low, highRate: high, minRate: minimum, maxRate: maximum, expectedBid: Math.round(input.baseAmount * median / 100), minBid: Math.round(input.baseAmount * low / 100), maxBid: Math.round(input.baseAmount * high / 100), distribution, samples };
 }
-export async function getBidRateTrend(input: { agency?: string; itemName?: string }) {
-  const rows = await listNotices({ q: input.itemName || input.agency, sourceType: "award", limit: 200 });
-  const filtered = rows.filter(row => (!input.agency || row.agency?.includes(input.agency)) && (!input.itemName || `${row.title} ${row.itemName ?? ""}`.includes(input.itemName)) && row.awardRate && row.noticeDate);
+export async function getBidRateTrend(input: { agency?: string; itemName?: string; days: number }) {
+  const rows = await listNotices({ q: input.itemName || input.agency, sourceType: "award", limit: 500 });
+  const since = new Date(); since.setDate(since.getDate() - (input.days - 1)); since.setHours(0, 0, 0, 0);
+  const filtered = rows.filter(row => (!input.agency || row.agency?.includes(input.agency)) && (!input.itemName || `${row.title} ${row.itemName ?? ""}`.includes(input.itemName)) && row.awardRate && row.noticeDate && row.noticeDate >= since);
   return buildBidRateTrend(filtered);
 }
 export async function listBidAnalysisHistory(userId: number) { const db = await getDb(); if (!db) return []; return db.select().from(bidAnalysisHistory).where(eq(bidAnalysisHistory.userId, userId)).orderBy(desc(bidAnalysisHistory.createdAt)).limit(12); }

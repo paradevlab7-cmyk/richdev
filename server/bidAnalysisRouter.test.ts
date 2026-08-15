@@ -38,7 +38,7 @@ describe("analysis router", () => {
     const input = { agency: "조달청", itemName: "전산장비" };
     mocks.getBidRateTrend.mockResolvedValueOnce([{ date: "2026-08-01", averageRate: 89.2, count: 3 }]);
     const result = await appRouter.createCaller(context).analysis.trend(input);
-    expect(mocks.getBidRateTrend).toHaveBeenCalledWith(input);
+    expect(mocks.getBidRateTrend).toHaveBeenCalledWith({ ...input, days: 90 });
     expect(result).toEqual([{ date: "2026-08-01", averageRate: 89.2, count: 3 }]);
   });
 });

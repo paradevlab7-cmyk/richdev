@@ -4,15 +4,16 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-const mocks = vi.hoisted(() => ({ save: vi.fn(), invalidate: vi.fn(), historyData: [] as Array<{ id: number; agency: string | null; itemName: string | null; baseAmount: string; expectedBid: string; sampleSize: number }> }));
+const mocks = vi.hoisted(() => ({ save: vi.fn(), invalidate: vi.fn(), excel: vi.fn(), pdf: vi.fn(async () => true), trendInputs: [] as Array<{ agency?: string; itemName?: string; days: number }>, historyData: [] as Array<{ id: number; agency: string | null; itemName: string | null; baseAmount: string; expectedBid: string; sampleSize: number }> }));
 
 vi.mock("@/components/DashboardLayout", () => ({ default: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
+vi.mock("@/lib/bidAnalysisExport", () => ({ exportBidAnalysisToExcel: mocks.excel, exportBidAnalysisToPdf: mocks.pdf }));
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     useUtils: () => ({ analysis: { history: { invalidate: mocks.invalidate } } }),
     analysis: {
       estimate: { useQuery: () => ({ data: { sampleSize: 12, medianRate: 90, lowRate: 88, highRate: 92, minRate: 82, maxRate: 97, expectedBid: 90000000, minBid: 88000000, maxBid: 92000000, distribution: [{ label: "82.0~85.0%", count: 1 }, { label: "85.0~88.0%", count: 2 }, { label: "88.0~91.0%", count: 5 }, { label: "91.0~94.0%", count: 3 }, { label: "94.0~97.0%", count: 1 }], samples: [{ id: 1, title: "전산장비 구매", agency: "조달청", noticeDate: new Date("2026-08-01"), awardRate: 90.1, awardAmount: 90100000 } ] }, isLoading: false }) },
-      trend: { useQuery: () => ({ data: [{ date: "2026-08-01", averageRate: 89.2, count: 3 }, { date: "2026-08-02", averageRate: 90.1, count: 4 }], isLoading: false }) },
+      trend: { useQuery: (input: { agency?: string; itemName?: string; days: number }) => { mocks.trendInputs.push(input); return { data: [{ date: "2026-08-01", averageRate: 89.2, count: 3 }, { date: "2026-08-02", averageRate: 90.1, count: 4 }], isLoading: false }; } },
       history: { useQuery: () => ({ data: mocks.historyData, isLoading: false }) },
       save: { useMutation: () => ({ mutate: mocks.save, isPending: false }) },
     },
@@ -21,7 +22,7 @@ vi.mock("@/lib/trpc", () => ({
 
 import Analysis from "./Analysis";
 
-afterEach(() => { cleanup(); mocks.save.mockReset(); mocks.invalidate.mockReset(); mocks.historyData = []; });
+afterEach(() => { cleanup(); mocks.save.mockReset(); mocks.invalidate.mockReset(); mocks.excel.mockReset(); mocks.pdf.mockReset(); mocks.trendInputs = []; mocks.historyData = []; });
 
 describe("Analysis", () => {
   it("formats a quick amount and displays distribution, samples, and save action after analysis", async () => {
@@ -43,7 +44,7 @@ describe("Analysis", () => {
   it("calculates a cost-and-margin floor and compares it against the statistical scenarios", async () => {
     const user = userEvent.setup({ document: globalThis.document });
     render(<Analysis />);
-    await user.type(screen.getByLabelText("총원가(원)"), "80000000");
+    await user.type(screen.getByLabelText("기본 원가(원)"), "80000000");
     await user.clear(screen.getByLabelText("목표 마진율(%)"));
     await user.type(screen.getByLabelText("목표 마진율(%)"), "20");
     expect(screen.getByText("하한선 100,000,000원")).toBeTruthy();
@@ -52,6 +53,33 @@ describe("Analysis", () => {
     expect(screen.getByText("원가·마진 하한선")).toBeTruthy();
     expect(screen.getByText("통계 중앙")).toBeTruthy();
     expect(screen.getByText(/일부 통계 시나리오가 입력한 목표 마진 하한선보다 낮습니다/)).toBeTruthy();
+  });
+
+  it("includes ancillary cost and commission in expected profit and switches the trend period", async () => {
+    const user = userEvent.setup({ document: globalThis.document });
+    render(<Analysis />);
+    await user.type(screen.getByLabelText("기본 원가(원)"), "80000000");
+    await user.type(screen.getByLabelText("부대비용(원)"), "2000000");
+    await user.clear(screen.getByLabelText("수수료율(%)"));
+    await user.type(screen.getByLabelText("수수료율(%)"), "1");
+    expect(screen.getByText(/총원가:/)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "100,000,000원" }));
+    await user.click(screen.getByRole("button", { name: "분석 실행" }));
+    expect(screen.getByText("예상 이익금")).toBeTruthy();
+    expect(screen.getAllByText("7,100,000원").length).toBeGreaterThan(0);
+    await user.click(screen.getByRole("button", { name: "30일" }));
+    expect(mocks.trendInputs.at(-1)).toMatchObject({ days: 30 });
+  });
+
+  it("exports the displayed scenario and trend report as Excel and PDF", async () => {
+    const user = userEvent.setup({ document: globalThis.document });
+    render(<Analysis />);
+    await user.click(screen.getByRole("button", { name: "100,000,000원" }));
+    await user.click(screen.getByRole("button", { name: "분석 실행" }));
+    await user.click(screen.getByRole("button", { name: "Excel" }));
+    await user.click(screen.getByRole("button", { name: "PDF" }));
+    expect(mocks.excel).toHaveBeenCalledWith(expect.objectContaining({ baseAmount: 100000000, trendDays: 90, scenarios: expect.any(Array) }));
+    expect(mocks.pdf).toHaveBeenCalledWith("bid-analysis-report");
   });
 
   it("saves the submitted analysis and restores conditions when a saved record is selected", async () => {
