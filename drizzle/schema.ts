@@ -111,6 +111,22 @@ export const collectionRuns = mysqlTable("collection_runs", {
   finishedAt: timestamp("finishedAt"),
 });
 
+export const bidAnalysisHistory = mysqlTable("bid_analysis_history", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  agency: varchar("agency", { length: 255 }),
+  itemName: text("itemName"),
+  baseAmount: decimal("baseAmount", { precision: 18, scale: 2 }).notNull(),
+  sampleSize: int("sampleSize").notNull(),
+  medianRate: decimal("medianRate", { precision: 8, scale: 4 }).notNull(),
+  lowRate: decimal("lowRate", { precision: 8, scale: 4 }).notNull(),
+  highRate: decimal("highRate", { precision: 8, scale: 4 }).notNull(),
+  expectedBid: decimal("expectedBid", { precision: 18, scale: 2 }).notNull(),
+  minBid: decimal("minBid", { precision: 18, scale: 2 }).notNull(),
+  maxBid: decimal("maxBid", { precision: 18, scale: 2 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Notice = typeof notices.$inferSelect;

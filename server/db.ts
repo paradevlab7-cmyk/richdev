@@ -2,7 +2,7 @@ import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { count } from "drizzle-orm";
 import { ENV } from "./_core/env";
-import { InsertUser, users, userSettings, monitoringKeywords, favoriteFilters, notices, savedNotices, collectionRuns } from "../drizzle/schema";
+import { InsertUser, users, userSettings, monitoringKeywords, favoriteFilters, notices, savedNotices, collectionRuns, bidAnalysisHistory } from "../drizzle/schema";
 import { COLLECTION_SOURCE_TYPES, type CollectionSourceType, estimateCollectionWork, normalizeCollectionDays, normalizeServiceCollectionDefaults } from "../shared/collectionPreferences";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -101,5 +101,17 @@ export async function estimateBid(input: { agency?: string; itemName?: string; b
   const rates = filtered.map(row => Number(row.awardRate)).filter(Number.isFinite).sort((a, b) => a - b);
   if (!rates.length) return { sampleSize: 0, message: "조건에 맞는 과거 낙찰률 데이터가 없습니다." };
   const median = rates[Math.floor(rates.length / 2)]; const low = rates[Math.floor(rates.length * 0.25)]; const high = rates[Math.max(0, Math.ceil(rates.length * 0.75) - 1)];
-  return { sampleSize: rates.length, medianRate: median, lowRate: low, highRate: high, expectedBid: Math.round(input.baseAmount * median / 100), minBid: Math.round(input.baseAmount * low / 100), maxBid: Math.round(input.baseAmount * high / 100) };
+  const minimum = rates[0]; const maximum = rates[rates.length - 1]; const spread = Math.max(maximum - minimum, 0.01);
+  const distribution = Array.from({ length: 5 }, (_, index) => {
+    const start = minimum + spread * index / 5; const end = index === 4 ? maximum : minimum + spread * (index + 1) / 5;
+    return { label: `${start.toFixed(1)}~${end.toFixed(1)}%`, count: rates.filter(rate => index === 4 ? rate >= start && rate <= end : rate >= start && rate < end).length };
+  });
+  const samples = filtered.map(row => ({ id: row.id, title: row.title, agency: row.agency, noticeDate: row.noticeDate, awardRate: Number(row.awardRate), awardAmount: row.awardAmount ? Number(row.awardAmount) : null })).sort((a, b) => (b.noticeDate?.getTime() ?? 0) - (a.noticeDate?.getTime() ?? 0)).slice(0, 8);
+  return { sampleSize: rates.length, medianRate: median, lowRate: low, highRate: high, minRate: minimum, maxRate: maximum, expectedBid: Math.round(input.baseAmount * median / 100), minBid: Math.round(input.baseAmount * low / 100), maxBid: Math.round(input.baseAmount * high / 100), distribution, samples };
+}
+export async function listBidAnalysisHistory(userId: number) { const db = await getDb(); if (!db) return []; return db.select().from(bidAnalysisHistory).where(eq(bidAnalysisHistory.userId, userId)).orderBy(desc(bidAnalysisHistory.createdAt)).limit(12); }
+export async function saveBidAnalysisHistory(userId: number, input: { agency?: string; itemName?: string; baseAmount: number }, result: { sampleSize: number; medianRate: number; lowRate: number; highRate: number; expectedBid: number; minBid: number; maxBid: number }) {
+  const db = await getDb(); if (!db) throw new Error("DB unavailable");
+  await db.insert(bidAnalysisHistory).values({ userId, agency: input.agency || null, itemName: input.itemName || null, baseAmount: input.baseAmount.toFixed(2), sampleSize: result.sampleSize, medianRate: result.medianRate.toFixed(4), lowRate: result.lowRate.toFixed(4), highRate: result.highRate.toFixed(4), expectedBid: result.expectedBid.toFixed(2), minBid: result.minBid.toFixed(2), maxBid: result.maxBid.toFixed(2) });
+  return listBidAnalysisHistory(userId);
 }

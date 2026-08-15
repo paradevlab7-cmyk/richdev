@@ -43,6 +43,13 @@
       "when": 1786786914715,
       "tag": "0005_smart_norman_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1786788086422,
+      "tag": "0006_fuzzy_roxanne_simpson",
+      "breakpoints": true
     }
   ]
 }
