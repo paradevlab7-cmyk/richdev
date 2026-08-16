@@ -3,6 +3,7 @@ import { collectionRuns, notices } from "../drizzle/schema";
 import { and, count, desc, eq, gt, gte, lte, or, sql } from "drizzle-orm";
 import { decryptSecret } from "./secure";
 import { getCollectionWindowDays, type CollectionSourceType } from "../shared/collectionPreferences";
+import { ENV } from "./_core/env";
 
 export const G2B_ENDPOINTS = {
   bid: "https://apis.data.go.kr/1230000/ad/BidPublicInfoService",
@@ -217,5 +218,17 @@ export async function retryFailedCollectionRun(userId: number, runId: number) {
   const resumedRun = { ...run, status: "running" as const, errorMessage: null, finishedAt: null };
   return collectTypeBatch(userId, type, { pageLimit: 5, requestedDays, activeRun: resumedRun, isBackground: Boolean(run.isBackground) });
 }
-export async function sendTelegram(userId: number, message: string) { const settings = await getSettings(userId); const token = decryptSecret(settings?.telegramBotToken); if (!settings?.telegramEnabled || !token || !settings.telegramChatId) return false; const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: settings.telegramChatId, text: message, disable_web_page_preview: true }) }); return response.ok; }
+export async function sendTelegram(userId: number, message: string) {
+  const settings = await getSettings(userId);
+  const token = decryptSecret(settings?.telegramBotToken) || ENV.telegramBotToken;
+  const chatId = settings?.telegramChatId || ENV.telegramChatId;
+  const enabled = settings?.telegramEnabled || Boolean(ENV.telegramBotToken && ENV.telegramChatId);
+  if (!enabled || !token || !chatId) return false;
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text: message, disable_web_page_preview: true }),
+  });
+  return response.ok;
+}
 function formatApiDate(date: Date) { const p = (n: number) => String(n).padStart(2, "0"); return `${date.getFullYear()}${p(date.getMonth() + 1)}${p(date.getDate())}${p(date.getHours())}${p(date.getMinutes())}`; }

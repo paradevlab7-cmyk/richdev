@@ -251,3 +251,5 @@
 - [ ] Vercel Preview·Production 런타임에서 G2B 환경변수가 실제 수집 경로에 적용되는지 서버 응답·로그로 확인
 - [ ] G2B 인증키 반영 후 Production에서 실제 수집 1회와 결과 조회를 성공시켜 종단 검증
 - [ ] Production Cron 수집 후 텔레그램 알림 도달 여부를 확인해 운영 환경변수 적용을 입증
+
+- [ ] Production Cron에서 Telegram 환경변수 fallback을 사용하고 이메일 발송 경로를 제거해 Telegram-only 알림을 종단 검증
