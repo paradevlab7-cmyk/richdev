@@ -33,4 +33,10 @@ describe("Vercel cron health endpoint", () => {
     });
     expect(rejected.status).toBe(401);
   });
+
+  it("exposes the daily collection route behind the same Cron guard", async () => {
+    const response = await fetch(`${baseUrl}/api/cron/g2b-daily`);
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toMatchObject({ error: "unauthorized-cron" });
+  });
 });
