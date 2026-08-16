@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { isAuthorizedVercelCron } from "./runtimeApp";
+import { createRuntimeApp, getScheduledPageLimit, isAuthorizedVercelCron } from "./runtimeApp";
 
 describe("Vercel cron authorization", () => {
   const previousSecret = process.env.CRON_SECRET;
@@ -21,5 +21,22 @@ describe("Vercel cron authorization", () => {
     delete process.env.CRON_SECRET;
 
     expect(isAuthorizedVercelCron("Bearer cron-test-secret")).toBe(false);
+  });
+
+  it("keeps every Vercel cron mode within one page per invocation", () => {
+    expect(getScheduledPageLimit("hourly")).toBe(1);
+    expect(getScheduledPageLimit("daily")).toBe(1);
+    expect(getScheduledPageLimit("six-hour")).toBe(1);
+  });
+
+  it("registers GitHub OAuth without exposing the retired Manus callback", () => {
+    const app = createRuntimeApp("vercel") as any;
+    const paths = app._router.stack
+      .filter((layer: any) => layer.route)
+      .map((layer: any) => layer.route.path);
+
+    expect(paths).toContain("/api/auth/github");
+    expect(paths).toContain("/api/auth/github/callback");
+    expect(paths).not.toContain("/api/oauth/callback");
   });
 });

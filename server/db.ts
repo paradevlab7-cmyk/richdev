@@ -6,10 +6,12 @@ import { InsertUser, users, userSettings, monitoringKeywords, favoriteFilters, n
 import { buildBidRateTrend } from "./bidRateTrend";
 import { COLLECTION_SOURCE_TYPES, type CollectionSourceType, estimateCollectionWork, normalizeCollectionDays, normalizeServiceCollectionDefaults } from "../shared/collectionPreferences";
 import { normalizeCollectionRunError } from "../shared/collectionRunStatus";
+import { buildTiDbConnectionOptions, getTiDbConnectionUrl } from "./tidbConnection";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) _db = drizzle(process.env.DATABASE_URL);
+  const url = getTiDbConnectionUrl();
+  if (!_db && url) _db = drizzle({ connection: buildTiDbConnectionOptions(url) });
   return _db;
 }
 

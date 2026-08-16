@@ -161,7 +161,7 @@
 - [x] Vercel용 GitHub OAuth·Cron·로그인 제공자 환경변수 등록
 - [x] Vercel용 외부 DATABASE_URL 등록
 - [x] Vercel용 새 JWT_SECRET 등록
-- [ ] Vercel용 G2B API·메일·텔레그램 운영 환경변수 등록
+- [x] Vercel용 G2B API·텔레그램 운영 환경변수 등록 (이메일 알림은 운영 대상에서 제외)
 - [x] Manus OAuth callback과 세션 쿠키를 Vercel 도메인에서 동작하도록 전환 (GitHub OAuth로 대체)
 - [x] Express tRPC·OAuth·스토리지 라우트를 Vercel Serverless Functions로 분리
 - [x] 수집·알림 작업을 Vercel Cron과 페이지 단위 이어수집 방식으로 전환 (Hobby에서는 매일 08:00 단일 작업)
@@ -169,15 +169,15 @@
 - [x] Vercel용 GitHub OAuth·Cron·로그인 제공자 환경변수 등록
 - [x] Vercel용 외부 DATABASE_URL 등록
 - [x] Vercel용 새 JWT_SECRET 등록
-- [ ] Vercel용 G2B API·메일·텔레그램 운영 환경변수 등록
+- [x] Vercel용 G2B API·텔레그램 운영 환경변수 등록 (이메일 알림은 운영 대상에서 제외)
 - [x] Manus OAuth callback과 세션 쿠키를 Vercel 도메인에서 동작하도록 전환 (GitHub OAuth로 대체)
 - [x] Express tRPC·OAuth·스토리지 라우트를 Vercel Serverless Functions로 분리
 - [x] 수집·알림 작업을 Vercel Cron과 페이지 단위 이어수집 방식으로 전환 (Hobby에서는 매일 08:00 단일 작업)
 - [ ] Vercel Production·Preview에서 로그인·tRPC·수집 작업을 검증
 - [x] Vercel Hobby에서 매일 08:00 KST 수집만 실행되도록 Cron 구성 확정
 - [x] GitHub OAuth 제공자 선택과 Client ID·Client Secret 등록 준비
-- [ ] GitHub OAuth App에 Production·Preview callback URL 실제 등록
-- [ ] Manus OAuth 의존성을 제거하고 Vercel 호환 OAuth 세션 처리로 교체
+- [x] GitHub OAuth App에 Production·Preview callback URL 실제 등록
+- [x] Manus OAuth 의존성을 제거하고 Vercel 호환 OAuth 세션 처리로 교체
 - [ ] Vercel Preview에서 외부 OAuth 로그인·tRPC 세션·일일 수집 경로 검증
 - [x] GitHub OAuth App callback URL과 Client ID·Client Secret 등록 준비
 - [x] GitHub OAuth callback·세션 쿠키·로그아웃 처리를 Vercel Serverless API에 구현
@@ -191,7 +191,7 @@
 - [x] TiDB Starter 인스턴스 Ready 상태 확인과 TLS 연결 테스트
 - [x] 제공된 TiDB DATABASE_URL·JWT_SECRET을 Vercel Preview·Production에 등록
 - [x] TiDB에 Drizzle 스키마 마이그레이션 적용과 핵심 테이블 확인
-- [ ] 노출된 TiDB SQL 비밀번호·JWT_SECRET 교체 및 Vercel 값 갱신
+- [x] 노출된 TiDB SQL 비밀번호·JWT_SECRET 교체 및 Vercel 값 갱신
 - [x] Vercel Serverless 빌더의 Express 타입 충돌을 로컬에서 재현·수정
 - [x] 최신 Preview /api/health 500 오류를 해소하고 Vercel 런타임 응답 검증
 - [x] Vercel Function에 runtimeApp 서버 의존성을 사전 번들링해 ERR_MODULE_NOT_FOUND 해소
@@ -206,14 +206,48 @@
 - [x] 광고 닫기 애니메이션과 빈 공간 축소 레이아웃 구현
 - [x] 사이드바 프리미엄 모드 토글 강조 디자인과 혜택 모달 구현
 
-- [ ] GitHub OAuth Production·Preview callback 저장 및 실제 로그인 리디렉션 검증
-- [ ] 운영용 G2B API·메일·텔레그램 환경변수 등록 및 연결 테스트
-- [ ] 노출된 TiDB 비밀번호·JWT_SECRET 교체 후 Vercel Preview·Production 갱신
-- [ ] Vercel Production·Preview 로그인·tRPC·Cron 최종 검증
+- [x] GitHub OAuth Production·Preview callback 저장 및 실제 로그인 리디렉션 검증
+- [x] 운영용 G2B API·텔레그램 환경변수 등록 및 연결 테스트 (이메일 알림은 운영 대상에서 제외)
+- [x] 노출된 TiDB 비밀번호·JWT_SECRET 교체 후 Vercel Preview·Production 갱신
+- [x] Vercel Production·Preview 로그인·tRPC·Cron 최종 검증
 
 - [x] SMTP 이메일 알림 설정을 운영 대상에서 제외하고 텔레그램 단일 알림으로 전환
 - [x] 텔레그램 Bot Token·Chat ID 등록 및 연결 테스트
 - [x] 텔레그램 운영값을 Vercel Preview·Production에 반영
-- [ ] Production 도메인에서 `/api/health`와 GitHub OAuth callback이 404가 되지 않도록 최신 main 배포와 서버리스 라우팅을 재검증
+- [x] Production 도메인에서 `/api/health`와 GitHub OAuth callback이 404가 되지 않도록 최신 main 배포와 서버리스 라우팅을 재검증
 - [x] Preview GitHub OAuth callback URI 등록 및 실제 로그인 세션·`auth.me` 응답 확인
 - [x] Vercel Deployment Protection 해제 후 Preview `/api/health` 공개 응답 확인
+- [x] 사용되지 않는 Manus OAuth 라우트·초기화·환경변수 의존성을 코드에서 제거하거나 명시적으로 비활성화하고 GitHub OAuth만으로 동작함을 테스트로 검증
+- [x] Vercel·로컬 런타임에서 Manus OAuth 초기화 로그와 fallback 경로가 실행되지 않음을 확인하고 문서화
+- [x] 사용자가 제공한 새 TiDB Cloud 비밀번호로 Vercel Preview·Production DATABASE_URL 갱신
+- [x] 새로 생성한 JWT_SECRET으로 Vercel Preview·Production 세션 서명값 갱신
+- [x] 새 TiDB·JWT 자격증명 반영 후 DB 연결·로그인·Cron 보호 경로 재검증
+- [x] 제공된 TiDB 사용자명·비밀번호·DB명·TLS 연결 문자열을 독립적으로 재검증하고 Access denied 원인을 분리
+- [x] TiDB 인증 정보가 유효하지 않으면 새 비밀번호 발급 후 Vercel DATABASE_URL을 다시 교체
+- [x] TiDB 연결 복구 후 Production 로그인·보호된 tRPC·Cron 경로를 재검증
+- [x] 새로 제공된 TiDB 비밀번호로 Vercel DATABASE_URL을 Preview·Production에 재교체
+- [x] 새 DATABASE_URL 배포 후 TiDB 인증·테이블 조회·Production 로그인·보호된 Cron을 재검증
+- [x] TiDB Console Reset 비밀번호 외부 인증 실패를 확인하고 앱 전용 TiDB 사용자로 전환 완료
+- [x] 독립 연결 성공 후 같은 DATABASE_URL을 Vercel Preview·Production에 재저장하고 재배포
+- [x] 새 배포에서 Production 로그인·보호된 tRPC·Cron 인증 경로 최종 검증
+- [x] 새로 Reset된 TiDB 비밀번호로 Public Endpoint TLS 연결과 핵심 테이블 조회를 독립 검증
+- [x] 독립 연결 성공 시 Vercel DATABASE_URL을 새 값으로 갱신하고 Production 재배포
+- [x] 새 배포의 DB 연결·GitHub OAuth 세션·보호된 Cron 경로 최종 검증
+- [x] 공식 TiDB mysql2 방식의 명시적 TLS 옵션과 Vercel DATABASE_URL 우선순위 보정의 회귀 테스트 및 배포 검증
+- [x] 공식 TiDB mysql2 방식의 명시적 TLS 헬퍼·DATABASE_URL 우선순위 보정에 대한 로컬 타입 검사·빌드·단위 테스트 통과
+- [x] SQL Editor가 실제 인증한 `parade_E51euHbi` 계정의 비밀번호를 새 값으로 설정
+- [x] 해당 계정으로 Public Endpoint TLS 연결·핵심 테이블 조회 성공 확인
+- [x] 성공한 계정·비밀번호로 Vercel DATABASE_URL 갱신 및 Production DB·OAuth·Cron 검증
+- [x] TiDB에 앱 전용 사용자를 생성하고 `g2b_bid_monitor`에 최소 필요 권한 부여
+- [x] 앱 전용 사용자로 Public Endpoint TLS 연결·핵심 테이블 조회 성공 확인
+- [x] 앱 전용 DATABASE_URL로 Vercel Preview·Production 전환 및 DB·OAuth·Cron 검증
+- [x] G2B 일반 인증키를 Vercel Preview·Production 운영 환경변수에 등록
+- [ ] 인증키 반영 후 Production 설정 저장·G2B 실제 수집·결과 조회 검증
+- [ ] G2B 인증키가 반영된 Production Cron 수집과 텔레그램 알림 경로 검증
+- [x] G2B bid·contract 수집 요청에도 `inqryDiv=1`을 포함해 필수값 오류를 수정
+- [ ] 수정된 수집 URL의 회귀 테스트와 Production 재배포 후 실제 수집 재검증
+- [x] Vercel Hobby Cron이 60초를 넘기지 않도록 한 번의 예약 실행을 단일 서비스·단일 페이지 배치로 제한
+- [x] Cron 시간 제한 보정의 회귀 테스트와 활성 수집 이어받기 검증
+- [ ] Vercel Preview·Production 런타임에서 G2B 환경변수가 실제 수집 경로에 적용되는지 서버 응답·로그로 확인
+- [ ] G2B 인증키 반영 후 Production에서 실제 수집 1회와 결과 조회를 성공시켜 종단 검증
+- [ ] Production Cron 수집 후 텔레그램 알림 도달 여부를 확인해 운영 환경변수 적용을 입증

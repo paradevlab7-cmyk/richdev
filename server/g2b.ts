@@ -21,6 +21,12 @@ export function getCollectionDateParams(type: keyof typeof G2B_ENDPOINTS, start:
     : { inqryBgnDt: formatApiDate(start), inqryEndDt: formatApiDate(end) };
 }
 
+export function getCollectionQueryParams(type: keyof typeof G2B_ENDPOINTS, start: Date, end: Date) {
+  return type === "standard"
+    ? getCollectionDateParams(type, start, end)
+    : { inqryDiv: "1", ...getCollectionDateParams(type, start, end) };
+}
+
 const OPERATIONS = {
   bid: "getBidPblancListInfoServc",
   spec: "getPublicPrcureThngInfoServcPPSSrch",
@@ -146,8 +152,7 @@ async function collectTypeBatch(userId: number, type: keyof typeof G2B_ENDPOINTS
       url.searchParams.set("pageNo", String(pageNo));
       url.searchParams.set("numOfRows", String(pageSize));
       url.searchParams.set("type", "json");
-      if (type === "award" || type === "spec") url.searchParams.set("inqryDiv", "1");
-      Object.entries(getCollectionDateParams(type, start, end)).forEach(([key, value]) => url.searchParams.set(key, value));
+      Object.entries(getCollectionQueryParams(type, start, end)).forEach(([key, value]) => url.searchParams.set(key, value));
       const payload = await getJson(url);
       const items = toItems(payload);
       totalAvailable = totalCount(payload) || totalAvailable;

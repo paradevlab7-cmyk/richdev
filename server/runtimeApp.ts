@@ -1,7 +1,6 @@
 // @ts-nocheck -- Vercel's function builder injects web-standard request globals that conflict with Express 4 types.
 import express, { type Express, type Request, type Response } from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "./_core/oauth";
 import { registerGitHubOAuthRoutes } from "./_core/githubOAuth";
 import { registerStorageProxy } from "./_core/storageProxy";
 import { appRouter } from "./routers";
@@ -15,6 +14,10 @@ import { buildDailyDigest, sendDigestEmail } from "./email";
 export type ScheduledMode = "hourly" | "daily" | "six-hour";
 export type SchedulerRuntime = "manus" | "vercel";
 
+export function getScheduledPageLimit(_mode: ScheduledMode) {
+  return 1;
+}
+
 async function getCollectionOwner() {
   return await getUserByOpenId(ENV.ownerOpenId) ?? await getConfiguredCollectionOwner();
 }
@@ -23,7 +26,7 @@ export async function runScheduledCollection(mode: ScheduledMode) {
   const owner = await getCollectionOwner();
   if (!owner) return { ok: true as const, skipped: "owner-not-found" as const };
 
-  const result = await collectForUser(owner.id, undefined, mode === "six-hour" ? 1 : 5);
+  const result = await collectForUser(owner.id, undefined, getScheduledPageLimit(mode));
   if (mode === "daily") {
     const title = "나라장터 08:00 키워드 매칭 요약";
     const digest = await buildDailyDigest(owner.id);
@@ -116,7 +119,6 @@ export function createRuntimeApp(schedulerRuntime: SchedulerRuntime): Express {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
-  registerOAuthRoutes(app);
   registerGitHubOAuthRoutes(app);
   app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
   app.get("/api/health", (_req, res) => res.json({ ok: true, runtime: schedulerRuntime }));
