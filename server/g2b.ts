@@ -220,9 +220,9 @@ export async function retryFailedCollectionRun(userId: number, runId: number) {
 }
 export async function sendTelegram(userId: number, message: string) {
   const settings = await getSettings(userId);
-  const token = decryptSecret(settings?.telegramBotToken) || ENV.telegramBotToken;
-  const chatId = settings?.telegramChatId || ENV.telegramChatId;
-  const enabled = settings?.telegramEnabled || Boolean(ENV.telegramBotToken && ENV.telegramChatId);
+  const token = ENV.telegramBotToken || decryptSecret(settings?.telegramBotToken);
+  const chatId = ENV.telegramChatId || settings?.telegramChatId;
+  const enabled = Boolean(token && chatId) && (settings?.telegramEnabled !== false || Boolean(ENV.telegramBotToken && ENV.telegramChatId));
   if (!enabled || !token || !chatId) return false;
   const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
