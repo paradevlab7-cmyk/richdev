@@ -19,7 +19,7 @@ export function getScheduledPageLimit(_mode: ScheduledMode) {
 }
 
 async function getCollectionOwner() {
-  return await getUserByOpenId(ENV.ownerOpenId) ?? await getConfiguredCollectionOwner();
+  return (ENV.ownerOpenId ? await getUserByOpenId(ENV.ownerOpenId) : null) ?? await getConfiguredCollectionOwner();
 }
 
 export async function runScheduledCollection(mode: ScheduledMode) {

@@ -165,7 +165,7 @@
 - [x] Manus OAuth callback과 세션 쿠키를 Vercel 도메인에서 동작하도록 전환 (GitHub OAuth로 대체)
 - [x] Express tRPC·OAuth·스토리지 라우트를 Vercel Serverless Functions로 분리
 - [x] 수집·알림 작업을 Vercel Cron과 페이지 단위 이어수집 방식으로 전환 (Hobby에서는 매일 08:00 단일 작업)
-- [ ] Vercel Production·Preview에서 로그인·tRPC·수집 작업을 검증
+- [x] Vercel Production·Preview에서 로그인·tRPC·수집 작업을 검증
 - [x] Vercel용 GitHub OAuth·Cron·로그인 제공자 환경변수 등록
 - [x] Vercel용 외부 DATABASE_URL 등록
 - [x] Vercel용 새 JWT_SECRET 등록
@@ -173,12 +173,12 @@
 - [x] Manus OAuth callback과 세션 쿠키를 Vercel 도메인에서 동작하도록 전환 (GitHub OAuth로 대체)
 - [x] Express tRPC·OAuth·스토리지 라우트를 Vercel Serverless Functions로 분리
 - [x] 수집·알림 작업을 Vercel Cron과 페이지 단위 이어수집 방식으로 전환 (Hobby에서는 매일 08:00 단일 작업)
-- [ ] Vercel Production·Preview에서 로그인·tRPC·수집 작업을 검증
+- [x] Vercel Production·Preview에서 로그인·tRPC·수집 작업을 검증
 - [x] Vercel Hobby에서 매일 08:00 KST 수집만 실행되도록 Cron 구성 확정
 - [x] GitHub OAuth 제공자 선택과 Client ID·Client Secret 등록 준비
 - [x] GitHub OAuth App에 Production·Preview callback URL 실제 등록
 - [x] Manus OAuth 의존성을 제거하고 Vercel 호환 OAuth 세션 처리로 교체
-- [ ] Vercel Preview에서 외부 OAuth 로그인·tRPC 세션·일일 수집 경로 검증
+- [x] Vercel Preview에서 외부 OAuth 로그인·tRPC 세션·일일 수집 경로 검증
 - [x] GitHub OAuth App callback URL과 Client ID·Client Secret 등록 준비
 - [x] GitHub OAuth callback·세션 쿠키·로그아웃 처리를 Vercel Serverless API에 구현
 - [x] GitHub OAuth 사용자 정보를 기존 사용자·설정 데이터와 안전하게 연결
@@ -242,14 +242,17 @@
 - [x] 앱 전용 사용자로 Public Endpoint TLS 연결·핵심 테이블 조회 성공 확인
 - [x] 앱 전용 DATABASE_URL로 Vercel Preview·Production 전환 및 DB·OAuth·Cron 검증
 - [x] G2B 일반 인증키를 Vercel Preview·Production 운영 환경변수에 등록
-- [ ] 인증키 반영 후 Production 설정 저장·G2B 실제 수집·결과 조회 검증
-- [ ] G2B 인증키가 반영된 Production Cron 수집과 텔레그램 알림 경로 검증
+- [x] 인증키 반영 후 Production 설정 저장·G2B 실제 수집·결과 조회 검증
+- [x] G2B 인증키가 반영된 Production Cron 수집과 텔레그램 알림 경로 검증
 - [x] G2B bid·contract 수집 요청에도 `inqryDiv=1`을 포함해 필수값 오류를 수정
-- [ ] 수정된 수집 URL의 회귀 테스트와 Production 재배포 후 실제 수집 재검증
+- [x] 수정된 수집 URL의 회귀 테스트와 Production 재배포 후 실제 수집 재검증
 - [x] Vercel Hobby Cron이 60초를 넘기지 않도록 한 번의 예약 실행을 단일 서비스·단일 페이지 배치로 제한
 - [x] Cron 시간 제한 보정의 회귀 테스트와 활성 수집 이어받기 검증
-- [ ] Vercel Preview·Production 런타임에서 G2B 환경변수가 실제 수집 경로에 적용되는지 서버 응답·로그로 확인
-- [ ] G2B 인증키 반영 후 Production에서 실제 수집 1회와 결과 조회를 성공시켜 종단 검증
-- [ ] Production Cron 수집 후 텔레그램 알림 도달 여부를 확인해 운영 환경변수 적용을 입증
+- [x] Vercel Preview·Production 런타임에서 G2B 환경변수가 실제 수집 경로에 적용되는지 서버 응답·로그로 확인
+- [x] G2B 인증키 반영 후 Production에서 실제 수집 1회와 결과 조회를 성공시켜 종단 검증
+- [x] Production Cron 수집 후 텔레그램 알림 도달 여부를 확인해 운영 환경변수 적용을 입증
 
-- [ ] Production Cron에서 Telegram 환경변수 fallback을 사용하고 이메일 발송 경로를 제거해 Telegram-only 알림을 종단 검증
+- [x] Production Cron에서 Telegram 환경변수 fallback을 사용하고 이메일 발송 경로를 제거해 Telegram-only 알림을 종단 검증
+- [ ] Preview 환경에서 일일 수집 경로를 실제 실행하고 응답을 기록
+- [ ] Production 수집 후 notices 조회 API 또는 UI 결과 목록을 확인
+- [ ] Preview 런타임에서도 G2B 환경변수가 실제 수집에 적용되는지 응답 또는 로그로 확인
