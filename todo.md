@@ -158,18 +158,25 @@
 - [x] Vercel MCP 403/404 문제에 대한 대체 검증 경로 확보 (GitHub Vercel 상태 체크 사용)
 
 - [x] Vercel 환경변수·서버리스·예약작업 호환성 점검 결과 기록
-- [ ] Vercel용 인증·DB·G2B·알림 환경변수 목록 확정 및 비밀값 등록
+- [x] Vercel용 GitHub OAuth·Cron·로그인 제공자 환경변수 등록
+- [ ] Vercel용 외부 DATABASE_URL 등록
+- [ ] Vercel용 새 JWT_SECRET 등록
+- [ ] Vercel용 G2B API·메일·텔레그램 운영 환경변수 등록
 - [ ] Manus OAuth callback과 세션 쿠키를 Vercel 도메인에서 동작하도록 전환
 - [ ] Express tRPC·OAuth·스토리지 라우트를 Vercel Serverless Functions로 분리
 - [ ] 수집·알림 작업을 Vercel Cron과 페이지 단위 이어수집 방식으로 전환
 - [ ] Vercel Production·Preview에서 로그인·tRPC·수집 작업을 검증
-- [ ] Vercel용 인증·DB·G2B·알림 환경변수 목록 확정 및 비밀값 등록
+- [x] Vercel용 GitHub OAuth·Cron·로그인 제공자 환경변수 등록
+- [ ] Vercel용 외부 DATABASE_URL 등록
+- [ ] Vercel용 새 JWT_SECRET 등록
+- [ ] Vercel용 G2B API·메일·텔레그램 운영 환경변수 등록
 - [ ] Manus OAuth callback과 세션 쿠키를 Vercel 도메인에서 동작하도록 전환
 - [ ] Express tRPC·OAuth·스토리지 라우트를 Vercel Serverless Functions로 분리
 - [ ] 수집·알림 작업을 Vercel Cron과 페이지 단위 이어수집 방식으로 전환
 - [ ] Vercel Production·Preview에서 로그인·tRPC·수집 작업을 검증
 - [ ] Vercel Hobby에서 매일 08:00 KST 수집만 실행되도록 Cron 구성 확정
-- [ ] GitHub 또는 Google OAuth 제공자 선택과 callback URL·자격증명 등록 준비
+- [x] GitHub OAuth 제공자 선택과 Client ID·Client Secret 등록 준비
+- [ ] GitHub OAuth App에 Production·Preview callback URL 실제 등록
 - [ ] Manus OAuth 의존성을 제거하고 Vercel 호환 OAuth 세션 처리로 교체
 - [ ] Vercel Preview에서 외부 OAuth 로그인·tRPC 세션·일일 수집 경로 검증
 - [ ] GitHub OAuth App callback URL과 Client ID·Client Secret 등록 준비
