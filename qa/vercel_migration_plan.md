@@ -57,3 +57,7 @@ Vercel 공식 문서는 Git 저장소의 push마다 자동 배포와 preview dep
 [1]: https://vercel.com/docs/git "Deploying Git Repositories with Vercel"
 [2]: https://vercel.com/docs/git/vercel-for-github "Deploying GitHub Projects with Vercel"
 [3]: https://vercel.com/docs/rbac/access-roles "Vercel Access Roles"
+
+## 확인된 배포 URL
+
+최신 GitHub Vercel 배포 상태에서 production URL `https://g2b-bid-monitor-4rzmiwsaq-540346.vercel.app`을 확인했습니다. 브라우저로 해당 URL에 접근한 결과 HTTP 화면이 정상 로드되었고, `나라장터 입찰 모니터` 제목과 인증 필요 안내가 표시되었습니다. 이는 프런트엔드 배포와 인증 게이트가 동작함을 의미합니다. 데이터 API와 Manus OAuth의 완전 동작은 Vercel 환경변수 등록 및 callback URL 설정 후 별도 검증이 필요합니다.
