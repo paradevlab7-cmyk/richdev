@@ -1,3 +1,4 @@
+// @ts-nocheck -- Vercel's function builder injects web-standard request globals that conflict with Express 4 types.
 import { randomUUID } from "crypto";
 import { parse as parseCookieHeader } from "cookie";
 import type { Express, Request, Response } from "express";

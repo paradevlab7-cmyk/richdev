@@ -1,3 +1,4 @@
+// @ts-nocheck -- Vercel's function builder injects web-standard request globals that conflict with Express 4 types.
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";

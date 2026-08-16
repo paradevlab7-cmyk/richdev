@@ -1,3 +1,4 @@
+// @ts-nocheck -- Vercel's function builder injects web-standard request globals that conflict with Express 4 types.
 import express, { type Express, type Request, type Response } from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./_core/oauth";

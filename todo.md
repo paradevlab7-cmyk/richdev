@@ -192,3 +192,5 @@
 - [x] 제공된 TiDB DATABASE_URL·JWT_SECRET을 Vercel Preview·Production에 등록
 - [x] TiDB에 Drizzle 스키마 마이그레이션 적용과 핵심 테이블 확인
 - [ ] 노출된 TiDB SQL 비밀번호·JWT_SECRET 교체 및 Vercel 값 갱신
+- [ ] Vercel Serverless 빌더의 Express 타입 충돌을 로컬에서 재현·수정
+- [ ] 최신 Preview /api/health 500 오류를 해소하고 Vercel 런타임 응답 검증

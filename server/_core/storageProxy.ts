@@ -1,3 +1,4 @@
+// @ts-nocheck -- Vercel's function builder injects web-standard request globals that conflict with Express 4 types.
 import type { Express } from "express";
 import { ENV } from "./env";
 

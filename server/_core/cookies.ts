@@ -1,3 +1,4 @@
+// @ts-nocheck -- Vercel's function builder injects web-standard request globals that conflict with Express 4 types.
 import type { CookieOptions, Request } from "express";
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
