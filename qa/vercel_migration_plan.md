@@ -1,15 +1,45 @@
-# Vercel 이전 검토
+# Vercel 이전 검토 및 초기 배포 설정
 
-현재 연결된 Vercel 팀(`540346`)에는 기존 프로젝트가 없습니다. 현재 앱의 Git 원격은 사용자 GitHub 저장소가 아닌 Manus 내부 원격이며, 로컬 프로젝트에도 `vercel.json` 또는 `.vercel/project.json`이 없습니다.
+## 현재 초기 설정 상태
 
-## 현재 상태
+사용자가 제공한 공개 GitHub 저장소 `https://github.com/paradevlab7-cmyk/richdev`는 최초 확인 시 비어 있었습니다. 현재 애플리케이션 소스를 `main` 브랜치에 업로드했고, 최신 커밋은 `45ddaf5`(`Add initial Vercel build configuration`)입니다.
 
-헤더는 이미 검색 화면에서 한 줄 flex 레이아웃으로 변경되었고 `G2B BID MONITOR` 제목을 확대했습니다. 현재 Manus 호스팅과 데이터베이스·인증·예약 수집은 정상 유지됩니다.
+연결된 Vercel 팀 `540346`에 `g2b-bid-monitor` Git 프로젝트를 연결했습니다. Vercel 프로젝트 ID는 `prj_0O74IXyNGDHUqXxc7SHInCsUTNzv`이며 production branch는 `main`입니다. 소스 업로드 후 Git 연동 배포가 트리거되도록 구성했습니다.
 
-## Vercel 완전 이전에 필요한 작업
+저장소 루트에 `vercel.json`을 추가하여 초기 프런트엔드 빌드 설정을 명시했습니다.
 
-현재 Express 서버와 예약 수집 실행을 그대로 Vercel에 올리는 것은 호환되지 않습니다. 이전하려면 사용자 소유 GitHub 저장소를 연결하거나 소스 파일을 직접 배포하고, Express/tRPC 서버 라우트를 Vercel Functions 구조로 전환해야 합니다. 개방표준 이어수집과 1·6시간·일일 예약 수집은 Vercel Cron 또는 별도 상시 실행 워커로 재설계해야 하며, MySQL/TiDB의 외부 연결·OAuth callback URL·나라장터 API 키·알림 토큰을 Vercel 환경변수에 등록해야 합니다.
+| 항목 | 값 |
+|---|---|
+| Framework | Vite |
+| Install command | `pnpm install --frozen-lockfile` |
+| Build command | `pnpm build` |
+| Output directory | `dist/public` |
+| Root directory | 저장소 루트 |
 
-## 재구축 진행에 필요한 사용자 입력
+로컬에서 동일한 `pnpm build`를 실행해 Vite 프런트엔드와 Express 번들이 정상 생성되는 것을 확인했습니다. Vercel MCP 배포 목록 조회는 현재 403 권한 오류를 반환하고, 기본 `g2b-bid-monitor.vercel.app` 도메인은 아직 생성되지 않아 배포 완료 URL을 확인하지 못했습니다.
 
-사용자 GitHub 저장소 주소(`owner/repository`)와 Vercel에 배포할 프로젝트 이름을 제공하면 Git 연동 미리보기 배포부터 시작할 수 있습니다. 저장소가 없다면 현재 코드를 새 GitHub 저장소로 먼저 내보낸 뒤 Vercel에 연결하는 방식이 필요합니다. 완전 이전 전에는 Manus 호스팅을 운영 원본으로 유지해야 데이터 수집과 예약 알림 중단을 피할 수 있습니다.
+## 필요한 Vercel 환경변수
+
+Vercel 프로젝트의 Preview와 Production 환경에 다음 값을 별도로 등록해야 합니다. 값은 현재 Manus 프로젝트에서 자동 주입되는 값과 사용자가 직접 관리하는 나라장터·알림 자격증명으로 나뉩니다.
+
+| 구분 | 환경변수 | 용도 |
+|---|---|---|
+| 데이터베이스 | `DATABASE_URL` | 외부 MySQL/TiDB 연결 |
+| 세션·OAuth | `JWT_SECRET`, `VITE_APP_ID`, `OAUTH_SERVER_URL`, `VITE_OAUTH_PORTAL_URL` | 세션 서명과 Manus OAuth |
+| 사용자·소유자 | `OWNER_OPEN_ID`, `OWNER_NAME` | 소유자 알림·예약 작업 식별 |
+| 내장 API | `BUILT_IN_FORGE_API_URL`, `BUILT_IN_FORGE_API_KEY`, `VITE_FRONTEND_FORGE_API_URL`, `VITE_FRONTEND_FORGE_API_KEY` | 저장소·알림·내장 API 연동 |
+| 앱 설정 | `VITE_APP_TITLE`, `VITE_APP_LOGO` | 프런트엔드 브랜딩 |
+| 나라장터 | 프로젝트 설정에 저장된 공공데이터 인증키 | G2B API 호출 |
+| 알림 | SMTP·Resend·SendGrid·Mailgun·Telegram 관련 사용자 설정 | 이메일·텔레그램 알림 |
+
+비밀값은 GitHub에 커밋하지 않고 Vercel의 Environment Variables에 직접 등록해야 합니다. 현재 세션에서는 사용자가 Vercel용 실제 비밀값을 제공하지 않았으므로, 환경변수 등록은 보류했습니다.
+
+## 구조적 제한사항
+
+현재 애플리케이션은 상시 실행 가능한 Express 서버와 Manus Heartbeat에 의존합니다. `vercel.json`은 초기 프런트엔드 빌드 확인을 위한 설정이며, 이것만으로 tRPC API·OAuth callback·데이터 수집·알림·예약 작업이 Vercel에서 완전히 동작하지는 않습니다.
+
+완전 이전 단계에서는 `/api/trpc`와 OAuth callback을 Vercel Functions 또는 별도 서버 런타임으로 변환하고, 현재 1시간·6시간·매일 08:00 수집을 Vercel Cron의 UTC 일정 또는 상시 실행 워커로 재설계해야 합니다. 개방표준 이어수집은 Vercel Function의 실행 시간 제한과 재시도·중복 방지 정책을 고려해 페이지 단위 작업으로 분리해야 합니다. Manus OAuth callback URL도 Vercel production 도메인에 맞춰 별도 등록해야 합니다.
+
+## 다음 단계
+
+Vercel 대시보드에서 프로젝트의 Git 연동 권한과 배포 로그를 확인하고, 필요한 Preview 환경변수를 등록한 뒤 preview 배포를 재실행해야 합니다. 이후 서버리스 API 변환과 Cron·워커 이전을 별도 단계로 진행해야 현재의 검색·수집·알림 기능을 유지할 수 있습니다.
