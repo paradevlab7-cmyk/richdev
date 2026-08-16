@@ -13,6 +13,9 @@ describe("Vercel Function runtime bundle", () => {
     expect(packageJson.scripts["build:vercel"]).toContain(
       "esbuild server/runtimeApp.ts --bundle"
     );
+    expect(packageJson.scripts["build:vercel"]).not.toContain(
+      "--packages=external"
+    );
     expect(packageJson.scripts["build:vercel"]).toContain(
       "--outfile=api/runtimeApp.cjs"
     );
