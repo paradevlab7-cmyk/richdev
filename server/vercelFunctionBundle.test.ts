@@ -38,6 +38,7 @@ describe("Vercel Function runtime bundle", () => {
       ["api", "auth", "github", "callback.ts"],
       ["api", "oauth", "callback.ts"],
       ["api", "trpc.ts"],
+      ["api", "trpc", "[procedure].ts"],
       ["api", "cron", "g2b-daily.ts"],
       ["api", "cron", "health.ts"],
     ];
