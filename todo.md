@@ -214,3 +214,6 @@
 - [x] SMTP 이메일 알림 설정을 운영 대상에서 제외하고 텔레그램 단일 알림으로 전환
 - [x] 텔레그램 Bot Token·Chat ID 등록 및 연결 테스트
 - [x] 텔레그램 운영값을 Vercel Preview·Production에 반영
+- [ ] Production 도메인에서 `/api/health`와 GitHub OAuth callback이 404가 되지 않도록 최신 main 배포와 서버리스 라우팅을 재검증
+- [x] Preview GitHub OAuth callback URI 등록 및 실제 로그인 세션·`auth.me` 응답 확인
+- [x] Vercel Deployment Protection 해제 후 Preview `/api/health` 공개 응답 확인
