@@ -61,3 +61,9 @@ Vercel 공식 문서는 Git 저장소의 push마다 자동 배포와 preview dep
 ## 확인된 배포 URL
 
 최신 GitHub Vercel 배포 상태에서 production URL `https://g2b-bid-monitor-4rzmiwsaq-540346.vercel.app`을 확인했습니다. 브라우저로 해당 URL에 접근한 결과 HTTP 화면이 정상 로드되었고, `나라장터 입찰 모니터` 제목과 인증 필요 안내가 표시되었습니다. 이는 프런트엔드 배포와 인증 게이트가 동작함을 의미합니다. 데이터 API와 Manus OAuth의 완전 동작은 Vercel 환경변수 등록 및 callback URL 설정 후 별도 검증이 필요합니다.
+
+## Preview 브랜치 배포 확인
+
+`vercel-preview-initial` 브랜치를 GitHub에 푸시한 결과 Vercel이 Preview 환경 배포를 생성했습니다. 배포 식별자는 GitHub deployment `5926413876`이며, 상태는 `success` / `Deployment has completed`입니다. 실제 Preview URL은 `https://g2b-bid-monitor-7u4wz1weo-540346.vercel.app`이고 브라우저 접근 결과 `나라장터 입찰 모니터` 제목과 `Sign in to continue` 인증 게이트가 정상 표시되었습니다.
+
+Production URL은 `https://g2b-bid-monitor-4rzmiwsaq-540346.vercel.app`이며, Preview URL과 구분하여 관리합니다. Preview·Production 모두 정적 프런트엔드와 인증 게이트까지 확인했으며, API·OAuth·수집·알림은 Vercel 환경변수와 서버리스/Cron 전환 이후 별도 검증 대상입니다.

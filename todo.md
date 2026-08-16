@@ -147,9 +147,9 @@
 - [x] 헤더 변경 검증과 Vercel 이전 가능 범위 결과 기록
 - [x] 제공된 GitHub 저장소 paradevlab7-cmyk/richdev 접근 및 프로젝트 구조 확인
 - [x] 연결된 Vercel 팀에 Git 프로젝트 연결 및 초기 빌드 설정
-- [ ] Vercel preview 브랜치 배포 URL 확인 및 브라우저 접근 검증
-- [ ] Vercel preview 배포 식별자·URL·빌드 결과 기록
-- [ ] Production URL과 preview URL을 구분해 Vercel 검증 결과 정리
+- [x] Vercel preview 브랜치 배포 URL 확인 및 브라우저 접근 검증
+- [x] Vercel preview 배포 식별자·URL·빌드 결과 기록
+- [x] Production URL과 preview URL을 구분해 Vercel 검증 결과 정리
 - [x] Vercel 미리보기 배포의 실제 preview URL 확인 및 접근 가능 여부 검증
 - [x] Vercel 배포 상세에서 식별자·URL·빌드 결과 기록
 - [x] Vercel 미리보기 배포 생성과 빌드 결과 확인 (GitHub Vercel 상태 체크 success)
