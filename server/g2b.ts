@@ -218,17 +218,25 @@ export async function retryFailedCollectionRun(userId: number, runId: number) {
   const resumedRun = { ...run, status: "running" as const, errorMessage: null, finishedAt: null };
   return collectTypeBatch(userId, type, { pageLimit: 5, requestedDays, activeRun: resumedRun, isBackground: Boolean(run.isBackground) });
 }
-export async function sendTelegram(userId: number, message: string) {
+export async function sendTelegramStatus(userId: number, message: string) {
   const settings = await getSettings(userId);
   const token = ENV.telegramBotToken || decryptSecret(settings?.telegramBotToken);
   const chatId = ENV.telegramChatId || settings?.telegramChatId;
   const enabled = Boolean(token && chatId) && (settings?.telegramEnabled !== false || Boolean(ENV.telegramBotToken && ENV.telegramChatId));
-  if (!enabled || !token || !chatId) return false;
-  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text: message, disable_web_page_preview: true }),
-  });
-  return response.ok;
+  if (!enabled || !token || !chatId) return { sent: false, reason: "telegram-configuration-missing" };
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text: message, disable_web_page_preview: true }),
+    });
+    return response.ok ? { sent: true as const } : { sent: false as const, reason: `telegram-api-${response.status}` };
+  } catch (error) {
+    return { sent: false as const, reason: "telegram-network-error" };
+  }
+}
+
+export async function sendTelegram(userId: number, message: string) {
+  return (await sendTelegramStatus(userId, message)).sent;
 }
 function formatApiDate(date: Date) { const p = (n: number) => String(n).padStart(2, "0"); return `${date.getFullYear()}${p(date.getMonth() + 1)}${p(date.getDate())}${p(date.getHours())}${p(date.getMinutes())}`; }

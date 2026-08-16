@@ -7,7 +7,7 @@ import { appRouter } from "./routers";
 import { createContext } from "./_core/context";
 import { sdk } from "./_core/sdk";
 import { ENV } from "./_core/env";
-import { collectForUser, collectSpecBackfill, formatCollectionFailures, sendTelegram } from "./g2b";
+import { collectForUser, collectSpecBackfill, formatCollectionFailures, sendTelegram, sendTelegramStatus } from "./g2b";
 import { getConfiguredCollectionOwner, getUserByOpenId } from "./db";
 import { buildDailyDigest } from "./email";
 
@@ -28,13 +28,18 @@ export async function runScheduledCollection(mode: ScheduledMode) {
 
   const result = await collectForUser(owner.id, undefined, getScheduledPageLimit(mode));
   let telegramSent = false;
+  let telegramReason: string | undefined;
   if (mode === "daily") {
     const digest = await buildDailyDigest(owner.id);
-    telegramSent = await sendTelegram(owner.id, `나라장터 08:00 요약\n최근 5일 수집 ${digest.totalCount}건\n키워드 매칭 ${digest.matchedCount}건`);
+    const telegram = await sendTelegramStatus(owner.id, `나라장터 08:00 요약\n최근 5일 수집 ${digest.totalCount}건\n키워드 매칭 ${digest.matchedCount}건`);
+    telegramSent = telegram.sent;
+    telegramReason = telegram.reason;
   } else if (result.matched > 0) {
-    telegramSent = await sendTelegram(owner.id, `나라장터 신규 키워드 매칭 공고 ${result.matched}건이 수집되었습니다.`);
+    const telegram = await sendTelegramStatus(owner.id, `나라장터 신규 키워드 매칭 공고 ${result.matched}건이 수집되었습니다.`);
+    telegramSent = telegram.sent;
+    telegramReason = telegram.reason;
   }
-  return { ok: true as const, result, notifications: { telegramSent, emailSent: false } };
+  return { ok: true as const, result, notifications: { telegramSent, telegramReason, emailSent: false } };
 }
 
 export async function runSpecBackfill() {
