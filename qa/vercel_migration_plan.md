@@ -78,3 +78,9 @@ GitHub OAuth App은 사용자 승인 후 등록된 callback URL로 되돌아오�
 
 [4]: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app "Creating an OAuth app"
 [5]: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps "Authorizing OAuth apps"
+
+## GitHub OAuth 서버리스 구현 상태
+
+GitHub OAuth 시작 경로(`/api/auth/github`)와 callback(`/api/auth/github/callback`), GitHub 식별자 기반 세션, tRPC 사용자 인증 연결을 구현했습니다. Vercel Cron 비밀값을 사용하는 보호된 상태 점검 경로(`/api/cron/health`)도 추가했으며, GitHub OAuth 시작·GitHub 세션·Cron 인증을 포함한 로컬 테스트 90개와 타입 검사·프로덕션 빌드를 통과했습니다.
+
+현재 연결된 Vercel 작업 도구에는 환경변수 생성·수정 기능이 제공되지 않습니다. 따라서 입력받은 GitHub OAuth 및 Cron 값은 개발 환경에서 검증했지만, Vercel Project Settings에 실제 `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `CRON_SECRET`, `VITE_AUTH_PROVIDER=github`, 외부 `DATABASE_URL`, 새 `JWT_SECRET`를 등록하기 전에는 원격 GitHub 로그인과 DB 기능을 완료 검증할 수 없습니다.
