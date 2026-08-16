@@ -1,6 +1,7 @@
 import express, { type Express, type Request, type Response } from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./_core/oauth";
+import { registerGitHubOAuthRoutes } from "./_core/githubOAuth";
 import { registerStorageProxy } from "./_core/storageProxy";
 import { appRouter } from "./routers";
 import { createContext } from "./_core/context";
@@ -83,6 +84,10 @@ function registerVercelSchedules(app: Express) {
     res.status(401).json({ error: "unauthorized-cron" });
     return false;
   };
+  app.get("/api/cron/health", (req, res) => {
+    if (!authorize(req, res)) return;
+    return res.json({ ok: true, scheduler: "vercel" });
+  });
   const schedule = (mode: ScheduledMode) => async (req: Request, res: Response) => {
     if (!authorize(req, res)) return;
     try {
@@ -111,6 +116,7 @@ export function createRuntimeApp(schedulerRuntime: SchedulerRuntime): Express {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+  registerGitHubOAuthRoutes(app);
   app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
   app.get("/api/health", (_req, res) => res.json({ ok: true, runtime: schedulerRuntime }));
 

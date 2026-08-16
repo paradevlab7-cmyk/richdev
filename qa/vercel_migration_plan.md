@@ -71,3 +71,10 @@ Production URL은 `https://g2b-bid-monitor-4rzmiwsaq-540346.vercel.app`이며, P
 ## 서버리스·Cron 전환 Preview 상태
 
 Vercel Serverless API catch-all과 Cron 엔드포인트를 추가한 커밋 `9e5dc51`을 `vercel-preview-initial` 브랜치에 푸시했습니다. 로컬 `pnpm check`, `pnpm test`(87개), `pnpm build`는 통과했습니다. GitHub의 Vercel 상태 체크는 배포 시작 직후 아직 생성되지 않아, 원격 Preview 빌드 상태는 다음 배포 폴링에서 확인합니다.
+
+## GitHub OAuth 전환 준비
+
+GitHub OAuth App은 사용자 승인 후 등록된 callback URL로 되돌아오며, 이 프로젝트의 callback은 `/api/auth/github/callback`으로 구현했습니다. GitHub 공식 문서에 따르면 OAuth App 설정에서 callback URL을 등록할 수 있고, 인증 코드 흐름은 callback URL 소유를 전제로 합니다. Preview와 Production 도메인을 모두 테스트하려면 별도 callback URL을 등록해야 합니다. [4] [5]
+
+[4]: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app "Creating an OAuth app"
+[5]: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps "Authorizing OAuth apps"

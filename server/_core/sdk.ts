@@ -22,6 +22,7 @@ export type SessionPayload = {
   openId: string;
   appId: string;
   name: string;
+  provider?: "manus" | "github";
 };
 
 const EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
@@ -172,6 +173,22 @@ class SDKServer {
         openId,
         appId: ENV.appId,
         name: options.name || "",
+        provider: "manus",
+      },
+      options
+    );
+  }
+
+  async createExternalSessionToken(
+    openId: string,
+    options: { expiresInMs?: number; name?: string; provider: "github" }
+  ): Promise<string> {
+    return this.signSession(
+      {
+        openId,
+        appId: options.provider,
+        name: options.name || "",
+        provider: options.provider,
       },
       options
     );
@@ -190,6 +207,7 @@ class SDKServer {
       openId: payload.openId,
       appId: payload.appId,
       name: payload.name,
+      provider: payload.provider ?? "manus",
     })
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .setExpirationTime(expirationSeconds)
@@ -198,7 +216,7 @@ class SDKServer {
 
   async verifySession(
     cookieValue: string | undefined | null
-  ): Promise<{ openId: string; appId: string; name: string } | null> {
+  ): Promise<{ openId: string; appId: string; name: string; provider?: "manus" | "github" } | null> {
     if (!cookieValue) {
       console.warn("[Auth] Missing session cookie");
       return null;
@@ -209,7 +227,7 @@ class SDKServer {
       const { payload } = await jwtVerify(cookieValue, secretKey, {
         algorithms: ["HS256"],
       });
-      const { openId, appId, name } = payload as Record<string, unknown>;
+      const { openId, appId, name, provider } = payload as Record<string, unknown>;
 
       if (
         !isNonEmptyString(openId) ||
@@ -224,6 +242,7 @@ class SDKServer {
         openId,
         appId,
         name,
+        provider: provider === "github" ? "github" : "manus",
       };
     } catch (error) {
       console.warn("[Auth] Session verification failed", String(error));
@@ -274,6 +293,13 @@ class SDKServer {
 
     if (!session) {
       throw ForbiddenError("Invalid session cookie");
+    }
+
+    if (session.provider === "github") {
+      const user = await db.getUserByOpenId(session.openId);
+      if (!user) throw ForbiddenError("GitHub user not found");
+      await db.upsertUser({ openId: user.openId, lastSignedIn: new Date() });
+      return user;
     }
 
     if (session.openId.startsWith(CRON_OPEN_ID_PREFIX)) {

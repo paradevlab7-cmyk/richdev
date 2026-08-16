@@ -168,3 +168,10 @@
 - [ ] Express tRPC·OAuth·스토리지 라우트를 Vercel Serverless Functions로 분리
 - [ ] 수집·알림 작업을 Vercel Cron과 페이지 단위 이어수집 방식으로 전환
 - [ ] Vercel Production·Preview에서 로그인·tRPC·수집 작업을 검증
+- [ ] Vercel Hobby에서 매일 08:00 KST 수집만 실행되도록 Cron 구성 확정
+- [ ] GitHub 또는 Google OAuth 제공자 선택과 callback URL·자격증명 등록 준비
+- [ ] Manus OAuth 의존성을 제거하고 Vercel 호환 OAuth 세션 처리로 교체
+- [ ] Vercel Preview에서 외부 OAuth 로그인·tRPC 세션·일일 수집 경로 검증
+- [ ] GitHub OAuth App callback URL과 Client ID·Client Secret 등록 준비
+- [ ] GitHub OAuth callback·세션 쿠키·로그아웃 처리를 Vercel Serverless API에 구현
+- [ ] GitHub OAuth 사용자 정보를 기존 사용자·설정 데이터와 안전하게 연결
