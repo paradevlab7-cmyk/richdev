@@ -159,16 +159,16 @@
 
 - [x] Vercel 환경변수·서버리스·예약작업 호환성 점검 결과 기록
 - [x] Vercel용 GitHub OAuth·Cron·로그인 제공자 환경변수 등록
-- [ ] Vercel용 외부 DATABASE_URL 등록
-- [ ] Vercel용 새 JWT_SECRET 등록
+- [x] Vercel용 외부 DATABASE_URL 등록
+- [x] Vercel용 새 JWT_SECRET 등록
 - [ ] Vercel용 G2B API·메일·텔레그램 운영 환경변수 등록
 - [x] Manus OAuth callback과 세션 쿠키를 Vercel 도메인에서 동작하도록 전환 (GitHub OAuth로 대체)
 - [x] Express tRPC·OAuth·스토리지 라우트를 Vercel Serverless Functions로 분리
 - [x] 수집·알림 작업을 Vercel Cron과 페이지 단위 이어수집 방식으로 전환 (Hobby에서는 매일 08:00 단일 작업)
 - [ ] Vercel Production·Preview에서 로그인·tRPC·수집 작업을 검증
 - [x] Vercel용 GitHub OAuth·Cron·로그인 제공자 환경변수 등록
-- [ ] Vercel용 외부 DATABASE_URL 등록
-- [ ] Vercel용 새 JWT_SECRET 등록
+- [x] Vercel용 외부 DATABASE_URL 등록
+- [x] Vercel용 새 JWT_SECRET 등록
 - [ ] Vercel용 G2B API·메일·텔레그램 운영 환경변수 등록
 - [x] Manus OAuth callback과 세션 쿠키를 Vercel 도메인에서 동작하도록 전환 (GitHub OAuth로 대체)
 - [x] Express tRPC·OAuth·스토리지 라우트를 Vercel Serverless Functions로 분리
@@ -179,7 +179,7 @@
 - [ ] GitHub OAuth App에 Production·Preview callback URL 실제 등록
 - [ ] Manus OAuth 의존성을 제거하고 Vercel 호환 OAuth 세션 처리로 교체
 - [ ] Vercel Preview에서 외부 OAuth 로그인·tRPC 세션·일일 수집 경로 검증
-- [ ] GitHub OAuth App callback URL과 Client ID·Client Secret 등록 준비
+- [x] GitHub OAuth App callback URL과 Client ID·Client Secret 등록 준비
 - [x] GitHub OAuth callback·세션 쿠키·로그아웃 처리를 Vercel Serverless API에 구현
 - [x] GitHub OAuth 사용자 정보를 기존 사용자·설정 데이터와 안전하게 연결
 - [x] api/[...path].ts와 서버리스 라우팅 파일의 tRPC·OAuth·스토리지 처리 검토 및 검증
@@ -192,7 +192,7 @@
 - [x] 제공된 TiDB DATABASE_URL·JWT_SECRET을 Vercel Preview·Production에 등록
 - [x] TiDB에 Drizzle 스키마 마이그레이션 적용과 핵심 테이블 확인
 - [ ] 노출된 TiDB SQL 비밀번호·JWT_SECRET 교체 및 Vercel 값 갱신
-- [ ] Vercel Serverless 빌더의 Express 타입 충돌을 로컬에서 재현·수정
+- [x] Vercel Serverless 빌더의 Express 타입 충돌을 로컬에서 재현·수정
 - [x] 최신 Preview /api/health 500 오류를 해소하고 Vercel 런타임 응답 검증
 - [x] Vercel Function에 runtimeApp 서버 의존성을 사전 번들링해 ERR_MODULE_NOT_FOUND 해소
 - [x] VERCEL_TOKEN 교체 후 Vercel 프로젝트 목록 API 인증 테스트 통과
@@ -205,3 +205,8 @@
 - [x] 프리미엄 전용 고급 필터·테마 기능 구현
 - [x] 광고 닫기 애니메이션과 빈 공간 축소 레이아웃 구현
 - [x] 사이드바 프리미엄 모드 토글 강조 디자인과 혜택 모달 구현
+
+- [ ] GitHub OAuth Production·Preview callback 저장 및 실제 로그인 리디렉션 검증
+- [ ] 운영용 G2B API·메일·텔레그램 환경변수 등록 및 연결 테스트
+- [ ] 노출된 TiDB 비밀번호·JWT_SECRET 교체 후 Vercel Preview·Production 갱신
+- [ ] Vercel Production·Preview 로그인·tRPC·Cron 최종 검증

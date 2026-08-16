@@ -58,3 +58,7 @@ GitHub 실제 로그인 완료와 로그인 뒤 사용자 세션은 위 두 call
 [1]: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app "Creating an OAuth app"
 [2]: https://vercel.com/docs/cron-jobs/manage-cron-jobs "Managing Cron Jobs"
 [3]: https://vercel.com/docs/cron-jobs/usage-and-pricing "Usage & Pricing for Cron Jobs"
+
+## GitHub OAuth 외부 확인 (2026-08-16)
+
+로그인된 GitHub 계정의 Settings → Developer settings → OAuth Apps 화면을 직접 확인했으나 `No OAuth apps`가 표시되었다. 현재 계정에는 G2B BID MONITOR OAuth App이 존재하지 않으므로 callback URL 등록과 실제 OAuth 리디렉션 검증은 아직 완료할 수 없다. GitHub OAuth App은 Production callback과 안정 Preview callback을 함께 등록할 수 있으므로, 동일 계정에서 새 OAuth App을 생성한 뒤 두 URL과 현재 배포에 사용 중인 Client ID·Secret을 일치시켜야 한다.
