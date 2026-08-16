@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Bookmark, CheckCircle2, CheckSquare, Clock3, Database, Download, ExternalLink, ImageDown, Layers3, Plus, RefreshCw, Save, Search, Settings2, ShieldCheck, SlidersHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import SettingsEditor from "./SettingsEditor";
 
 const serviceMeta = {
   bid: { label: "입찰공고", description: "입찰공고의 공고명·기관·마감일·예정가격을 기간과 키워드로 조회합니다." },
@@ -115,6 +116,6 @@ export default function Home() {
   const { data: runs = [] } = trpc.collection.runs.useQuery(undefined, { refetchInterval: 10000 });
   const standardBidRun = runs.find(run => run.sourceType === "standard" && Number(run.totalAvailable) > 0);
   const cards = useMemo(() => [{ label: "입찰공고 API (DB 저장)", count: stats?.bid ?? 0, hint: standardBidRun ? `개방표준 ${Number(standardBidRun.storedCount).toLocaleString()} / ${Number(standardBidRun.totalAvailable).toLocaleString()}건 · 수집 진행 중` : "최근 수집 결과" }, { label: "전체 공고", count: stats?.total ?? 0 }, { label: "사전규격정보", count: stats?.spec ?? 0 }, { label: "낙찰정보", count: stats?.award ?? 0 }, { label: "관심공고", count: watched?.length ?? 0 }], [stats, watched, standardBidRun]);
-  const content = path === "/keywords" ? <KeywordsPage /> : path === "/settings" ? <SettingsPage /> : <SearchPage type={type} />;
+  const content = path === "/keywords" ? <KeywordsPage /> : path === "/settings" ? <SettingsEditor /> : <SearchPage type={type} />;
   return <DashboardLayout><div className="min-h-screen -m-4 bg-[#f6f8fb] p-5 md:p-8"><div className="mx-auto max-w-[1440px]"><header className="mb-7"><p className="text-xs font-semibold tracking-[.16em] text-primary">● G2B BID MONITOR</p><p className="mt-2 text-sm text-muted-foreground">나라장터 공고 수집·검색·알림 관리</p></header><CollectionProgressBanner runs={runs} /><div className="mb-7 grid grid-cols-2 gap-4 xl:grid-cols-5">{cards.map(card => <Card key={card.label} className="border-0 shadow-sm"><CardContent className="p-5"><p className="text-sm text-muted-foreground">{card.label}</p><p className="mt-3 text-3xl font-semibold">{Number(card.count).toLocaleString()}</p>{card.hint && <p className="mt-2 text-xs leading-4 text-primary">{card.hint}</p>}</CardContent></Card>)}</div><div className="mb-6 flex gap-5 border-b text-sm font-medium"><button className={path === "/" ? "border-b-2 border-primary pb-3 text-primary" : "pb-3 text-muted-foreground"} onClick={() => navigate("/")}>통합 검색</button><button className={path === "/keywords" ? "border-b-2 border-primary pb-3 text-primary" : "pb-3 text-muted-foreground"} onClick={() => navigate("/keywords")}>키워드 관리</button><button className={path === "/settings" ? "border-b-2 border-primary pb-3 text-primary" : "pb-3 text-muted-foreground"} onClick={() => navigate("/settings")}>설정</button></div>{content}</div></div></DashboardLayout>;
 }
