@@ -27,6 +27,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
+import AdSenseSlot from "./AdSenseSlot";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "공고 검색", path: "/" },
@@ -273,6 +274,9 @@ function DashboardLayoutContent({
           </div>
         )}
         <main className="flex-1 p-3 sm:p-5 lg:p-6">{children}</main>
+        <div className="mx-auto w-full max-w-7xl px-3 sm:px-5 lg:px-6">
+          <AdSenseSlot />
+        </div>
         <footer className="border-t border-border/70 px-4 py-5 text-center text-xs text-muted-foreground sm:px-6">Copyright 2026. paradev.lab7@gmail.com All rights reserved.</footer>
       </SidebarInset>
     </>
