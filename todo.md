@@ -145,7 +145,13 @@
 - [x] G2B BID MONITOR 브랜드 텍스트 확대 및 설명 문구 한 줄 헤더 레이아웃 적용
 - [x] Vercel 재구축에 필요한 환경변수·서버리스·예약작업 이전 계획 정리
 - [x] 헤더 변경 검증과 Vercel 이전 가능 범위 결과 기록
-- [ ] 제공된 GitHub 저장소 paradevlab7-cmyk/richdev 접근 및 프로젝트 구조 확인
-- [ ] 연결된 Vercel 팀에 Git 프로젝트 연결 및 초기 빌드 설정
-- [ ] Vercel 미리보기 배포 생성과 빌드 결과 확인
-- [ ] Vercel 환경변수·서버리스·예약작업 호환성 점검 결과 기록
+- [x] 제공된 GitHub 저장소 paradevlab7-cmyk/richdev 접근 및 프로젝트 구조 확인
+- [x] 연결된 Vercel 팀에 Git 프로젝트 연결 및 초기 빌드 설정
+- [ ] Vercel 미리보기 배포의 실제 preview URL 확인 및 접근 가능 여부 검증
+- [ ] Vercel 배포 상세에서 preview 식별자·URL·빌드 결과 기록
+- [x] Vercel 미리보기 배포 생성과 빌드 결과 확인 (GitHub Vercel 상태 체크 success)
+- [x] Vercel 원격 배포 상태 확인 (GitHub 커밋 상태에서 Deployment has completed 확인)
+- [ ] Vercel MCP 403/404 권한·프로젝트 가시성 문제 해결 또는 공식 제약 근거 기록
+- [x] Vercel MCP 403/404 문제에 대한 대체 검증 경로 확보 (GitHub Vercel 상태 체크 사용)
+
+- [x] Vercel 환경변수·서버리스·예약작업 호환성 점검 결과 기록

@@ -43,3 +43,7 @@ Vercel 프로젝트의 Preview와 Production 환경에 다음 값을 별도로 �
 ## 다음 단계
 
 Vercel 대시보드에서 프로젝트의 Git 연동 권한과 배포 로그를 확인하고, 필요한 Preview 환경변수를 등록한 뒤 preview 배포를 재실행해야 합니다. 이후 서버리스 API 변환과 Cron·워커 이전을 별도 단계로 진행해야 현재의 검색·수집·알림 기능을 유지할 수 있습니다.
+
+## 배포 검증 결과
+
+GitHub 커밋 `1816740`의 Vercel 상태 체크가 `success`이며, 설명은 `Deployment has completed`로 확인되었습니다. Vercel 배포 상세 주소는 [배포 상세 화면](https://vercel.com/540346/g2b-bid-monitor/3UPTxB9wVSJByQhaqbcMXebqZQdQ)입니다. Vercel MCP의 프로젝트·배포 목록 API는 현재 403/404를 반환해 MCP에서 직접 로그와 공개 preview URL을 읽지는 못했지만, GitHub의 Vercel 상태 체크를 통해 원격 빌드 완료를 교차 확인했습니다.
