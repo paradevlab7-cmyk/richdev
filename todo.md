@@ -210,3 +210,7 @@
 - [ ] 운영용 G2B API·메일·텔레그램 환경변수 등록 및 연결 테스트
 - [ ] 노출된 TiDB 비밀번호·JWT_SECRET 교체 후 Vercel Preview·Production 갱신
 - [ ] Vercel Production·Preview 로그인·tRPC·Cron 최종 검증
+
+- [x] SMTP 이메일 알림 설정을 운영 대상에서 제외하고 텔레그램 단일 알림으로 전환
+- [x] 텔레그램 Bot Token·Chat ID 등록 및 연결 테스트
+- [x] 텔레그램 운영값을 Vercel Preview·Production에 반영

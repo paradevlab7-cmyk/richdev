@@ -18,7 +18,9 @@ describe("SettingsEditor", () => {
     expect(apiKey.value).toBe("updated-key");
     rerender(<SettingsEditor />);
     expect((screen.getByLabelText("공공데이터 일반 인증키") as HTMLInputElement).value).toBe("updated-key");
+    expect(screen.queryByLabelText("이메일 수신 주소")).toBeNull();
+    expect(screen.queryByLabelText("기본 이메일 발송")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "설정 저장" }));
-    await waitFor(() => expect(mocks.saveMutate).toHaveBeenCalledWith(expect.objectContaining({ dataServiceKey: "updated-key", telegramBotToken: "saved-token", telegramChatId: "12345" })));
+    await waitFor(() => expect(mocks.saveMutate).toHaveBeenCalledWith(expect.objectContaining({ dataServiceKey: "updated-key", telegramBotToken: "saved-token", telegramChatId: "12345", emailEnabled: false })));
   });
 });
