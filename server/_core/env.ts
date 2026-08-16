@@ -9,4 +9,6 @@ export const ENV = {
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   githubClientId: process.env.GITHUB_CLIENT_ID ?? "",
   githubClientSecret: process.env.GITHUB_CLIENT_SECRET ?? "",
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN ?? "",
+  telegramChatId: process.env.TELEGRAM_CHAT_ID ?? "",
 };
