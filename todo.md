@@ -182,5 +182,13 @@
 - [ ] GitHub OAuth App callback URL과 Client ID·Client Secret 등록 준비
 - [x] GitHub OAuth callback·세션 쿠키·로그아웃 처리를 Vercel Serverless API에 구현
 - [x] GitHub OAuth 사용자 정보를 기존 사용자·설정 데이터와 안전하게 연결
-- [ ] api/[...path].ts와 서버리스 라우팅 파일의 tRPC·OAuth·스토리지 처리 검토 및 검증
-- [ ] /api/cron/g2b-daily의 페이지 단위 이어수집·알림 실행 로직과 테스트 검증
+- [x] api/[...path].ts와 서버리스 라우팅 파일의 tRPC·OAuth·스토리지 처리 검토 및 검증
+- [x] /api/cron/g2b-daily의 페이지 단위 이어수집·알림 실행 로직과 테스트 검증
+- [x] TiDB Cloud Serverless 클러스터 생성과 TLS 연결 문자열 확보
+- [x] TiDB DATABASE_URL을 Vercel Preview·Production에 등록
+- [x] 새 JWT_SECRET을 Vercel Preview·Production에 등록
+- [x] TiDB 외부 DB에 Drizzle 스키마 마이그레이션 적용 및 연결 확인
+- [x] TiDB Starter 인스턴스 Ready 상태 확인과 TLS 연결 테스트
+- [x] 제공된 TiDB DATABASE_URL·JWT_SECRET을 Vercel Preview·Production에 등록
+- [x] TiDB에 Drizzle 스키마 마이그레이션 적용과 핵심 테이블 확인
+- [ ] 노출된 TiDB SQL 비밀번호·JWT_SECRET 교체 및 Vercel 값 갱신
