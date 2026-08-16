@@ -4,5 +4,28 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm build",
   "outputDirectory": "dist/public",
-  "trailingSlash": false
+  "trailingSlash": false,
+  "functions": {
+    "api/[...path].ts": {
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/g2b-hourly",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/g2b-six-hour",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/g2b-daily",
+      "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/cron/g2b-spec-backfill",
+      "schedule": "*/10 * * * *"
+    }
+  ]
 }

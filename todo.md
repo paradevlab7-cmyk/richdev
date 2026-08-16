@@ -158,3 +158,13 @@
 - [x] Vercel MCP 403/404 문제에 대한 대체 검증 경로 확보 (GitHub Vercel 상태 체크 사용)
 
 - [x] Vercel 환경변수·서버리스·예약작업 호환성 점검 결과 기록
+- [ ] Vercel용 인증·DB·G2B·알림 환경변수 목록 확정 및 비밀값 등록
+- [ ] Manus OAuth callback과 세션 쿠키를 Vercel 도메인에서 동작하도록 전환
+- [ ] Express tRPC·OAuth·스토리지 라우트를 Vercel Serverless Functions로 분리
+- [ ] 수집·알림 작업을 Vercel Cron과 페이지 단위 이어수집 방식으로 전환
+- [ ] Vercel Production·Preview에서 로그인·tRPC·수집 작업을 검증
+- [ ] Vercel용 인증·DB·G2B·알림 환경변수 목록 확정 및 비밀값 등록
+- [ ] Manus OAuth callback과 세션 쿠키를 Vercel 도메인에서 동작하도록 전환
+- [ ] Express tRPC·OAuth·스토리지 라우트를 Vercel Serverless Functions로 분리
+- [ ] 수집·알림 작업을 Vercel Cron과 페이지 단위 이어수집 방식으로 전환
+- [ ] Vercel Production·Preview에서 로그인·tRPC·수집 작업을 검증
