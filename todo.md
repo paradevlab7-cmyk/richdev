@@ -195,3 +195,4 @@
 - [ ] Vercel Serverless 빌더의 Express 타입 충돌을 로컬에서 재현·수정
 - [x] 최신 Preview /api/health 500 오류를 해소하고 Vercel 런타임 응답 검증
 - [x] Vercel Function에 runtimeApp 서버 의존성을 사전 번들링해 ERR_MODULE_NOT_FOUND 해소
+- [x] VERCEL_TOKEN 교체 후 Vercel 프로젝트 목록 API 인증 테스트 통과
