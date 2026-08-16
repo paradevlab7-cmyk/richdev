@@ -31,4 +31,21 @@ describe("Vercel Function runtime bundle", () => {
     expect(entry).not.toContain('from "../server/runtimeApp"');
     expect(entry).toContain('createRuntimeApp("vercel")');
   });
+
+  it("exports the shared runtime from nested OAuth, tRPC, and Cron entrypoints", () => {
+    const expectedEntries = [
+      ["api", "auth", "github.ts"],
+      ["api", "auth", "github", "callback.ts"],
+      ["api", "oauth", "callback.ts"],
+      ["api", "trpc.ts"],
+      ["api", "cron", "g2b-daily.ts"],
+      ["api", "cron", "health.ts"],
+    ];
+
+    for (const segments of expectedEntries) {
+      const entry = readFileSync(resolve(projectRoot, ...segments), "utf8");
+      expect(entry).toContain('export { default } from');
+      expect(entry).toContain("_runtime");
+    }
+  });
 });

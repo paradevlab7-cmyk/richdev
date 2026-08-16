@@ -8,6 +8,9 @@
   "functions": {
     "api/[...path].ts": {
       "maxDuration": 60
+    },
+    "api/cron/g2b-daily.ts": {
+      "maxDuration": 60
     }
   },
   "crons": [

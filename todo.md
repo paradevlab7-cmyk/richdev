@@ -193,5 +193,5 @@
 - [x] TiDB에 Drizzle 스키마 마이그레이션 적용과 핵심 테이블 확인
 - [ ] 노출된 TiDB SQL 비밀번호·JWT_SECRET 교체 및 Vercel 값 갱신
 - [ ] Vercel Serverless 빌더의 Express 타입 충돌을 로컬에서 재현·수정
-- [ ] 최신 Preview /api/health 500 오류를 해소하고 Vercel 런타임 응답 검증
-- [ ] Vercel Function에 runtimeApp 서버 의존성을 사전 번들링해 ERR_MODULE_NOT_FOUND 해소
+- [x] 최신 Preview /api/health 500 오류를 해소하고 Vercel 런타임 응답 검증
+- [x] Vercel Function에 runtimeApp 서버 의존성을 사전 번들링해 ERR_MODULE_NOT_FOUND 해소
