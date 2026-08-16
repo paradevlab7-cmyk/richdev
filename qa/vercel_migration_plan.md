@@ -47,3 +47,13 @@ Vercel 대시보드에서 프로젝트의 Git 연동 권한과 배포 로그를 
 ## 배포 검증 결과
 
 GitHub 커밋 `1816740`의 Vercel 상태 체크가 `success`이며, 설명은 `Deployment has completed`로 확인되었습니다. Vercel 배포 상세 주소는 [배포 상세 화면](https://vercel.com/540346/g2b-bid-monitor/3UPTxB9wVSJByQhaqbcMXebqZQdQ)입니다. Vercel MCP의 프로젝트·배포 목록 API는 현재 403/404를 반환해 MCP에서 직접 로그와 공개 preview URL을 읽지는 못했지만, GitHub의 Vercel 상태 체크를 통해 원격 빌드 완료를 교차 확인했습니다.
+
+## 공식 문서 기준의 검증 한계
+
+Vercel 공식 문서는 Git 저장소의 push마다 자동 배포와 preview deployment가 생성되며, GitHub 상태 체크에 배포 URL을 제공할 수 있다고 설명합니다. 또한 팀 프로젝트 조회·배포·설정 접근은 팀 또는 프로젝트 역할에 따라 달라집니다. 따라서 현재 확인된 GitHub Vercel 상태 `success`와 `Deployment has completed`는 자동 배포 완료의 근거이지만, 현재 MCP 계정으로는 프로젝트 상세·배포 API가 403/404를 반환해 공개 preview hostname을 직접 확인할 수 없습니다. [1] [2]
+
+### References
+
+[1]: https://vercel.com/docs/git "Deploying Git Repositories with Vercel"
+[2]: https://vercel.com/docs/git/vercel-for-github "Deploying GitHub Projects with Vercel"
+[3]: https://vercel.com/docs/rbac/access-roles "Vercel Access Roles"
