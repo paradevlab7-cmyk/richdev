@@ -27,7 +27,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
-import AdSenseSlot from "./AdSenseSlot";
+import AdSenseSlot, { AdSenseSettingsToggle } from "./AdSenseSlot";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "공고 검색", path: "/" },
@@ -217,6 +217,10 @@ function DashboardLayoutContent({
             <button onClick={toggleTheme} className="mb-2 flex h-9 w-full items-center gap-3 rounded-lg px-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground group-data-[collapsible=icon]:justify-center" aria-label={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}>
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}<span className="group-data-[collapsible=icon]:hidden">{theme === "dark" ? "라이트 모드" : "다크 모드"}</span>
             </button>
+            <AdSenseSettingsToggle />
+            <div className="my-2 group-data-[collapsible=icon]:hidden">
+              <AdSenseSlot placement="sidebar" />
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
