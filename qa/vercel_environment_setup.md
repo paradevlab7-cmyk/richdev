@@ -11,9 +11,9 @@ GitHub OAuth App은 GitHub 계정의 **Settings → Developer settings → OAuth
 | Application name | `G2B BID MONITOR` |
 | Homepage URL | `https://g2b-bid-monitor-4rzmiwsaq-540346.vercel.app` |
 | Production callback URL | `https://g2b-bid-monitor-4rzmiwsaq-540346.vercel.app/api/auth/github/callback` |
-| Current Preview callback URL | `https://g2b-bid-monitor-7u4wz1weo-540346.vercel.app/api/auth/github/callback` |
+| Stable Preview callback URL | `https://g2b-bid-monitor-git-vercel-preview-initial-540346.vercel.app/api/auth/github/callback` |
 
-> Preview URL은 브랜치/배포마다 바뀔 수 있습니다. 실제 운영 전에는 Vercel에 고정 Production 도메인을 연결한 뒤, 그 도메인의 callback URL을 GitHub OAuth App의 기본 callback으로 사용해야 합니다.
+> 배포마다 생성되는 Preview URL은 바뀌지만, `vercel-preview-initial` 브랜치에는 위의 안정 별칭이 연결됩니다. GitHub OAuth App은 최대 10개의 callback URL을 지원하므로 Production 및 안정 Preview callback을 함께 등록할 수 있습니다.[1] 실제 운영 전에는 Vercel에 고정 Production 도메인을 연결한 뒤, 그 도메인의 callback URL을 추가 등록하는 방식을 권장합니다.
 
 ## 2. Vercel 환경변수
 
@@ -37,6 +37,21 @@ GitHub OAuth App은 GitHub 계정의 **Settings → Developer settings → OAuth
 ## 4. 수집·알림 데이터 이전 유의사항
 
 기존 사용자별 공공데이터 API 키, 텔레그램·이메일 발송 설정, 관심공고와 수집 이력은 현재 Manus DB에 있습니다. 새 외부 DB로 전환하려면 스키마 마이그레이션 후, 필요한 레코드를 안전하게 이관해야 합니다. 환경변수만 등록해도 기존 Manus DB 데이터는 자동 복사되지 않습니다.
+
+## 5. Preview Serverless 검증 결과
+
+2026-08-16에 `vercel-preview-initial` 안정 별칭에서 상태·OAuth·tRPC·Cron 진입 경로를 검증했습니다. Vercel 함수는 서버 런타임을 `api/runtimeApp.cjs`로 사전 번들링하여 실행하며, 중첩된 OAuth·Cron·tRPC 경로는 각각 명시적 Function 엔트리로 배포합니다.
+
+| 검증 경로 | 기대 결과 | 확인 결과 |
+|---|---|---|
+| `/api/health` | Vercel 런타임 상태 | `200`, `{"ok":true,"runtime":"vercel"}` |
+| `/api/cron/health` | 무인증 요청 차단 | `401 unauthorized-cron` |
+| `/api/cron/health` + 올바른 Bearer 토큰 | Cron 인증 성공 | `200`, `{"ok":true,"scheduler":"vercel"}` |
+| `/api/auth/github` | GitHub 인가 URL 리디렉션 | `302` 및 안정 Preview callback URL 포함 |
+| `/api/auth/github/callback` | callback 라우트 도달 | state·code 없이 `403 invalid GitHub OAuth state` |
+| `/api/trpc/auth.me` | tRPC 진입 경로 | `200`, 비로그인 사용자 `null` |
+
+GitHub 실제 로그인 완료와 로그인 뒤 사용자 세션은 위 두 callback URL을 GitHub OAuth App에 등록한 뒤에만 최종 검증할 수 있습니다. 실제 일일 수집은 운영 환경의 G2B API·메일·텔레그램 값을 추가한 다음 Cron 실행 이력으로 검증합니다.
 
 ## References
 
