@@ -27,17 +27,21 @@ export async function runScheduledCollection(mode: ScheduledMode) {
   if (!owner) return { ok: true as const, skipped: "owner-not-found" as const };
 
   const result = await collectForUser(owner.id, undefined, getScheduledPageLimit(mode));
+  let telegramSent = false;
+  let emailSent = false;
   if (mode === "daily") {
     const title = "나라장터 08:00 키워드 매칭 요약";
     const digest = await buildDailyDigest(owner.id);
-    await Promise.all([
+    const [telegramResult, emailResult] = await Promise.all([
       sendTelegram(owner.id, `나라장터 08:00 요약\n최근 5일 수집 ${digest.totalCount}건\n키워드 매칭 ${digest.matchedCount}건`),
       sendDigestEmail(owner.id, title, digest.html),
     ]);
+    telegramSent = telegramResult;
+    emailSent = emailResult.success;
   } else if (result.matched > 0) {
-    await sendTelegram(owner.id, `나라장터 신규 키워드 매칭 공고 ${result.matched}건이 수집되었습니다.`);
+    telegramSent = await sendTelegram(owner.id, `나라장터 신규 키워드 매칭 공고 ${result.matched}건이 수집되었습니다.`);
   }
-  return { ok: true as const, result };
+  return { ok: true as const, result, notifications: { telegramSent, emailSent } };
 }
 
 export async function runSpecBackfill() {
