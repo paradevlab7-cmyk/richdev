@@ -4,6 +4,11 @@ export type DetailGroup = { title: string; fields: DetailField[] };
 
 export function parseNoticeRaw(value: string | null | undefined): RawNotice { try { const parsed = JSON.parse(value ?? "{}"); return parsed && typeof parsed === "object" ? parsed : {}; } catch { return {}; } }
 export function rawText(raw: RawNotice, ...keys: string[]) { const value = keys.map(key => raw[key]).find(value => value !== undefined && value !== null && String(value).trim() && String(value) !== "undefined"); return value === undefined ? undefined : String(value); }
+
+export type ContractPartyRow = { index?: string; role?: string; exclusivity?: string; name?: string; representative?: string; country?: string; share?: string; businessNumber?: string; institutionCode?: string; institutionName?: string; institutionType?: string; department?: string; contactName?: string; contactPhone?: string };
+function splitCaretRows(value: unknown): string[][] { if (Array.isArray(value)) return value.flatMap(item => splitCaretRows(item)); if (typeof value !== "string" || !value.trim()) return []; const source = value.trim(); const matches = source.match(/\[[^\]]+\]/g) ?? []; const rows = matches.length ? matches.map(match => match.slice(1, -1)) : [source.replace(/^\[|\]$/g, "")]; return rows.map(row => row.split("^").map((cell: string) => cell.trim())); }
+export function parseDemandingInstitutions(value: unknown): ContractPartyRow[] { return splitCaretRows(value).map(cells => ({ index: cells[0], institutionCode: cells[1], institutionName: cells[2], institutionType: cells[3], department: cells[4], contactName: cells[5], contactPhone: cells[6] })).filter(row => row.institutionName || row.institutionCode); }
+export function parseContractCompanies(value: unknown): ContractPartyRow[] { return splitCaretRows(value).map(cells => { const businessNumber = [...cells].reverse().find(cell => /^\d{10}$/.test(cell)) ?? cells[9] ?? cells[7]; return { index: cells[0], role: cells[1], exclusivity: cells[2], name: cells[3], representative: cells[4], country: cells[5], share: cells[6], businessNumber }; }).filter(row => row.name || row.businessNumber); }
 const fields = (raw: RawNotice, entries: [string, string[]][]): DetailField[] => entries.map(([label, keys]) => ({ label, value: rawText(raw, ...keys) })).filter(field => field.value);
 
 export function buildBidOriginalUrl(raw: RawNotice) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBidOriginalUrl, getOriginalNoticeLabel, getOriginalNoticeUrl, getRawNoticeAttachments, getRelatedBidNumbers, getServiceDetailGroups } from "./noticeDetailModel";
+import { buildBidOriginalUrl, getOriginalNoticeLabel, getOriginalNoticeUrl, getRawNoticeAttachments, getRelatedBidNumbers, getServiceDetailGroups, parseContractCompanies, parseDemandingInstitutions } from "./noticeDetailModel";
 
 describe("notice detail model", () => {
   it("builds a G2B original link for award data that only provides notice number and order", () => {
@@ -25,6 +25,13 @@ describe("notice detail model", () => {
   it("links pre-specification records without a direct API URL to the official G2B specification list", () => {
     expect(getOriginalNoticeUrl("spec", { bfSpecRgstNo: "R26BD00258935" })).toContain("PRCA001_04");
     expect(getOriginalNoticeLabel("spec", { bfSpecRgstNo: "R26BD00258935" })).toBe("나라장터 사전규격 목록 열기");
+  });
+
+  it("parses caret-delimited contract parties into readable table rows", () => {
+    const institutions = parseDemandingInstitutions("[1^1833193^국가유산청 국립문화유산연구원 국립부여문화유산연구소^국가기관^국립부여문화유산연구소^임수연^0418305621]");
+    const companies = parseContractCompanies("[1^주계약업체^단독^(주)칸디자인뱅크^이춘희^대한민국^100^(주)칸디자인뱅크^^6948602239]");
+    expect(institutions[0]).toMatchObject({ institutionCode: "1833193", institutionName: "국가유산청 국립문화유산연구원 국립부여문화유산연구소", institutionType: "국가기관", department: "국립부여문화유산연구소", contactName: "임수연", contactPhone: "0418305621" });
+    expect(companies[0]).toMatchObject({ role: "주계약업체", exclusivity: "단독", name: "(주)칸디자인뱅크", representative: "이춘희", country: "대한민국", share: "100", businessNumber: "6948602239" });
   });
 
   it("selects a clickable original-site destination for every service type", () => {
