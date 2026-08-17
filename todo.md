@@ -253,6 +253,21 @@
 - [x] Production Cron 수집 후 텔레그램 알림 도달 여부를 확인해 운영 환경변수 적용을 입증
 
 - [x] Production Cron에서 Telegram 환경변수 fallback을 사용하고 이메일 발송 경로를 제거해 Telegram-only 알림을 종단 검증
-- [ ] Preview 환경에서 일일 수집 경로를 실제 실행하고 응답을 기록
-- [ ] Production 수집 후 notices 조회 API 또는 UI 결과 목록을 확인
-- [ ] Preview 런타임에서도 G2B 환경변수가 실제 수집에 적용되는지 응답 또는 로그로 확인
+- [x] Preview 환경에서 일일 수집 경로를 실제 실행하고 응답을 기록
+- [x] Production 수집 후 notices 조회 API 또는 UI 결과 목록을 확인
+- [x] Preview 런타임에서도 G2B 환경변수가 실제 수집에 적용되는지 응답 또는 로그로 확인
+- [x] Production 수집 후 notices 조회 화면에서 393건 공고·기관·담당자 데이터를 확인
+- [x] Telegram 일일 요약에 사용자 관심 키워드별 매칭 건수·비율 통계 추가
+- [x] Vercel 런타임 로그 기반 운영 오류 집계 API·대시보드 구현
+- [x] 키워드 통계·오류 대시보드 Vitest, 타입 검사, 빌드 및 Production 검증 (신규 3개 테스트 통과, 기존 전체 48개 파일·113개 테스트 통과; Telegram 외부 API 테스트는 네트워크 timeout으로 별도 실패)
+
+- [x] 계약 상세에서 수요기관·업체 구분자 목록을 실제 표 UI로 렌더링하고 기존 문자열 노출을 제거
+- [x] Vercel Preview 빌드 로그·화면 검증 결과를 반영하고 표 UI 회귀 테스트 추가 (49개 파일·114개 테스트, 타입 검사·빌드 통과)
+
+- [ ] 수정된 기관·업체 표 코드를 Vercel 연결 저장소에 동기화하고 새 Preview 배포
+- [ ] Umami 환경변수 등록 및 analytics 스크립트 빌드 경고 제거
+- [ ] 실제 계약 공고 수집 후 기관·업체 표와 업체 이력 모달 검증
+- [ ] Vercel SPA rewrite를 추가해 /contract 등 직접 하위 경로 접근 시 404가 발생하지 않도록 수정
+- [ ] Vercel Preview에서 계약 수집 후 계약 표와 업체 이력 모달을 재검증
+- [ ] Vercel 배포 로그에서 SPA·analytics 관련 오류와 경고를 재확인
+- [ ] Umami 환경변수 등록 상태와 analytics 로딩을 최종 확인
